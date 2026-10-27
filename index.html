@@ -285,6 +285,28 @@ textarea.inp{resize:vertical;min-height:72px;line-height:1.5}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);font-size:13px;padding:9px 14px;border-radius:999px;opacity:0;transition:.2s;z-index:40;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%)}
 
+/* fondeo / capital propio switch */
+.top{flex-wrap:wrap}
+.spaces{display:flex;gap:2px;padding:3px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.spaces button{padding:7px 16px;border-radius:9px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap;transition:background .15s,color .15s}
+.spaces button:hover{color:var(--text)}
+.spaces button.on{background:var(--text);color:var(--bg)}
+.side-space{font-size:12px;font-weight:400;color:var(--muted);margin-left:2px}
+.side-space::before{content:"· "}
+.s-name small{display:block;font-size:11px;font-weight:400;color:var(--muted);margin-top:1px}
+
+/* summary card popup */
+#share{cursor:zoom-in;transition:transform .2s,box-shadow .2s}
+#share:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(var(--tone),.12)}
+.share-pop{--veil:rgba(5,5,6,.55);position:fixed;inset:0;z-index:26;display:grid;place-items:center;padding:20px;overflow-y:auto;background:var(--veil);backdrop-filter:blur(14px) saturate(1.15);-webkit-backdrop-filter:blur(14px) saturate(1.15);opacity:0;pointer-events:none;transition:opacity .22s}
+:root[data-theme="light"] .share-pop{--veil:rgba(235,235,238,.55)}
+.share-pop.on{opacity:1;pointer-events:auto}
+.sp-inner{width:min(880px,100%);min-width:0;transform:scale(.95) translateY(10px);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.share-pop.on .sp-inner{transform:none}
+#sp-card .share{box-shadow:0 30px 90px rgba(0,0,0,.35)}
+.sp-actions{display:flex;justify-content:center;gap:8px;margin-top:18px}
+body.pop-open{overflow:hidden}
+
 /* side menu pull tab */
 .side-handle{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:22;width:20px;height:60px;border:1px solid var(--line2);border-left:0;border-radius:0 12px 12px 0;background:var(--panel);color:var(--muted);display:grid;place-items:center;box-shadow:0 4px 16px rgba(0,0,0,.12);transition:left .25s cubic-bezier(.2,.8,.2,1),width .15s,color .15s}
 .side-handle:hover{color:var(--text);width:24px}
@@ -341,6 +363,8 @@ body.loading .gbtn{visibility:hidden}
   .wrap{padding:16px 16px 40px}
   .top{margin-bottom:20px}
   .page-name{display:none}
+  .spaces{order:3;width:100%}
+  .spaces button{flex:1}
   .card{padding:16px;border-radius:14px}
   .share{padding:20px 18px 18px}
   .s-top{margin-bottom:20px}
@@ -382,7 +406,7 @@ body.loading .gbtn{visibility:hidden}
 
 <aside class="side" id="side" aria-label="Menú">
   <div class="side-head">
-    <div class="brand"><i class="mark"></i>Journal</div>
+    <div class="brand"><i class="mark"></i>Journal<span class="side-space" id="side-space"></span></div>
     <button class="icon" data-act="menu-close" aria-label="Cerrar menú"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
   </div>
   <nav class="side-nav">
@@ -408,6 +432,10 @@ body.loading .gbtn{visibility:hidden}
     <div class="hello">
       <button class="icon" data-act="menu" aria-label="Abrir menú"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 5.5h12M3 9h12M3 12.5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
       <button class="me" data-act="profile" aria-label="Editar perfil"><span class="avatar" id="avatar"></span><span><b id="hello"></b><small>Trading journal</small></span></button>
+    </div>
+    <div class="spaces" id="spaces" role="tablist">
+      <button data-space="fondeo" role="tab">Fondeo</button>
+      <button data-space="propio" role="tab">Capital propio</button>
     </div>
     <div class="top-right">
       <span class="page-name" id="page-name"></span>
@@ -485,6 +513,15 @@ body.loading .gbtn{visibility:hidden}
     </div>
   </form>
 </div>
+<div class="share-pop" id="share-pop" data-act="sp-close">
+  <div class="sp-inner">
+    <div id="sp-card"></div>
+    <div class="sp-actions">
+      <button class="btn line" data-act="sp-close">Cerrar</button>
+      <button class="btn pri" data-act="sp-download"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px;margin-right:6px"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Descargar imagen</button>
+    </div>
+  </div>
+</div>
 <div class="lightbox" id="lightbox" data-act="lb-close"><img alt=""></div>
 <div class="toast" id="toast"></div>
 
@@ -557,27 +594,40 @@ if (configured) {
   auth = getAuth(app);
   fs = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 }
+// Two separate journals: funded accounts keep the original paths (users/{uid}/trades…),
+// own capital lives under users/{uid}/spaces/propio/… The profile is shared.
+const SPACES = { fondeo: 'Fondeo', propio: 'Capital propio' };
+const base = () => space === 'fondeo' ? ['users', uid] : ['users', uid, 'spaces', space];
 const userRef = () => doc(fs, 'users', uid);
-const ref = (name, id) => doc(fs, 'users', uid, name, id);
+const ref = (name, id) => doc(fs, ...base(), name, id);
 const failed = err => { console.error(err); toast('No se pudo guardar (' + (err.code || 'error') + ')'); };
 const put = (name, obj) => setDoc(ref(name, obj.id), obj).catch(failed);
 const drop = (name, id) => deleteDoc(ref(name, id)).catch(failed);
 const saveProfile = () => setDoc(userRef(), { profile: db.profile }, { merge: true }).catch(failed);
 const saveNote = k => (db.notes[k] ? setDoc(ref('notes', k), { text: db.notes[k] }) : deleteDoc(ref('notes', k))).catch(failed);
 
-function listen() {
-  // Our own writes arrive with hasPendingWrites and were already rendered locally;
-  // only snapshots from the server (first load, other devices) need a re-render.
-  const after = snap => { if (!snap.metadata.hasPendingWrites) remoteRender(); };
-  const denied = err => { console.error(err); deniedMsg = 'Esta cuenta no tiene acceso a los datos.'; signOut(auth); };
-  const list = (name, fn) => onSnapshot(collection(fs, 'users', uid, name), s => { fn(s.docs); after(s); }, denied);
+// Our own writes arrive with hasPendingWrites and were already rendered locally;
+// only snapshots from the server (first load, other devices) need a re-render.
+const afterSnap = snap => { if (!snap.metadata.hasPendingWrites) remoteRender(); };
+const denied = err => { console.error(err); deniedMsg = 'Esta cuenta no tiene acceso a los datos.'; signOut(auth); };
+let profileUnsub = null;
+function listenProfile() {
+  profileUnsub = onSnapshot(userRef(), s => { db.profile = s.data()?.profile || { name: 'Homie', photo: '' }; afterSnap(s); }, denied);
+}
+function listenData() {
+  unsubs.forEach(u => u());
+  db = { ...normalize({}), profile: db.profile };
+  const list = (name, fn) => onSnapshot(collection(fs, ...base(), name), s => { fn(s.docs); afterSnap(s); }, denied);
   unsubs = [
     list('trades', d => db.trades = d.map(x => x.data())),
     list('accounts', d => db.accounts = d.map(x => x.data())),
     list('withdrawals', d => db.withdrawals = d.map(x => x.data())),
     list('notes', d => db.notes = Object.fromEntries(d.map(x => [x.id, x.data().text]))),
-    onSnapshot(userRef(), s => { db.profile = s.data()?.profile || { name: 'Homie', photo: '' }; after(s); }, denied),
   ];
+}
+function stopListening() {
+  unsubs.forEach(u => u()); unsubs = [];
+  if (profileUnsub) { profileUnsub(); profileUnsub = null; }
 }
 let rr;
 function remoteRender() {
@@ -593,6 +643,8 @@ function remoteRender() {
 let prefs = {};
 try { prefs = JSON.parse(localStorage.getItem(VIEW_KEY)) || {}; } catch (e) {}
 function savePrefs() { try { localStorage.setItem(VIEW_KEY, JSON.stringify(prefs)); } catch (e) {} }
+let space = SPACES[prefs.space] ? prefs.space : 'fondeo';
+const isFunded = () => space === 'fondeo';
 
 /* ---------- state ---------- */
 const now = new Date();
@@ -771,7 +823,7 @@ function renderDash() {
   sh.className = 'share' + (pnl < 0 ? ' loss' : '');
   sh.innerHTML = `
     <div class="s-top">
-      <div class="s-who"><span class="avatar" id="s-avatar"></span>${esc(db.profile.name || 'Journal')}</div>
+      <div class="s-who"><span class="avatar" id="s-avatar"></span><span class="s-name">${esc(db.profile.name || 'Journal')}<small>${SPACES[space]}</small></span></div>
       <div class="s-period"><b>${PERIOD_NAME[kind]}</b><span style="text-transform:${cap ? 'capitalize' : 'none'}">${label}</span></div>
     </div>
     <div class="s-grid">
@@ -895,21 +947,21 @@ function renderMonth(S) {
 /* ---------- accounts page ---------- */
 const STATUS = { challenge: 'Challenge', funded: 'Fondeada', burned: 'Quemada' };
 const STATUS_PLURAL = { all: 'Todas', challenge: 'Challenge', funded: 'Fondeadas', burned: 'Quemadas' };
-const statusTag = s => STATUS[s] ? `<span class="st ${s}">${STATUS[s]}</span>` : '';
+const statusTag = s => isFunded() && STATUS[s] ? `<span class="st ${s}">${STATUS[s]}</span>` : '';
 // Burned accounts no longer trade: keep them out of the trade picker and the live balance
-const usable = a => a.active !== false && a.status !== 'burned';
+const usable = a => a.active !== false && !(isFunded() && a.status === 'burned');
 
 function accountForm(a) {
   const st = a ? a.status || '' : 'challenge';
   return `<form class="form" id="acc-form" style="margin-bottom:20px">
-    <div class="row4">
-      <label class="field"><span>Nombre</span><input class="inp" name="name" value="${esc(a?.name)}" placeholder="MFFU 50K #1" required autocomplete="off"></label>
-      <label class="field"><span>Empresa / broker</span><input class="inp" name="firm" value="${esc(a?.firm)}" placeholder="Opcional" autocomplete="off"></label>
-      <label class="field"><span>Balance inicial</span><input class="inp mono" name="start" inputmode="decimal" value="${a ? a.start : ''}" placeholder="50,000" required></label>
-      <label class="field"><span>Estado</span><select class="inp" name="status">
+    <div class="${isFunded() ? 'row4' : 'row3'}">
+      <label class="field"><span>Nombre</span><input class="inp" name="name" value="${esc(a?.name)}" placeholder="${isFunded() ? 'MFFU 50K #1' : 'Cuenta personal'}" required autocomplete="off"></label>
+      <label class="field"><span>${isFunded() ? 'Empresa' : 'Broker'}</span><input class="inp" name="firm" value="${esc(a?.firm)}" placeholder="Opcional" autocomplete="off"></label>
+      <label class="field"><span>Balance inicial</span><input class="inp mono" name="start" inputmode="decimal" value="${a ? a.start : ''}" placeholder="${isFunded() ? '50,000' : '5,000'}" required></label>
+      ${isFunded() ? `<label class="field"><span>Estado</span><select class="inp" name="status">
         ${Object.entries(STATUS).map(([k, l]) => `<option value="${k}" ${st === k ? 'selected' : ''}>${l}</option>`).join('')}
         ${a && !a.status ? '<option value="" selected>Sin estado</option>' : ''}
-      </select></label>
+      </select></label>` : ''}
     </div>
     <div class="f-actions" style="justify-content:space-between;align-items:center">
       <label class="check"><input type="checkbox" name="active" ${a?.active === false ? '' : 'checked'}> Activa</label>
@@ -921,7 +973,7 @@ function accountForm(a) {
 function renderAccounts() {
   const all = db.accounts.map(a => ({ a, ...accountTotals(a) }))
     .sort((x, y) => usable(y.a) - usable(x.a) || x.a.name.localeCompare(y.a.name, 'es', { numeric: true }));
-  const filter = STATUS[prefs.accFilter] ? prefs.accFilter : 'all';
+  const filter = isFunded() && STATUS[prefs.accFilter] ? prefs.accFilter : 'all';
   const list = filter === 'all' ? all : all.filter(x => x.a.status === filter);
   const live = list.filter(x => usable(x.a));
   const bal = live.reduce((s, x) => s + x.balance, 0);
@@ -934,7 +986,7 @@ function renderAccounts() {
       <div><div class="title">Cuentas</div><div class="sub">El balance se calcula con el balance inicial, los trades y los retiros.</div></div>
       ${accForm === 'new' ? '' : '<button class="btn pri" data-act="acc-new">+ Nueva cuenta</button>'}
     </div>
-    ${all.length ? `<div class="fpills">${Object.entries(STATUS_PLURAL).map(([k, l]) =>
+    ${isFunded() && all.length ? `<div class="fpills">${Object.entries(STATUS_PLURAL).map(([k, l]) =>
       `<button class="${filter === k ? 'on' : ''}" data-acc-filter="${k}">${k !== 'all' ? `<i class="dot ${k}"></i>` : ''}${l}<span>${count(k)}</span></button>`).join('')}</div>` : ''}
     <div class="kpis">
       <div>Balance${filter === 'burned' ? '' : ' total'}<b class="mono">${live.length ? usd.format(bal) : '—'}</b></div>
@@ -1131,6 +1183,9 @@ function closeDrawer() {
 /* ---------- events ---------- */
 document.addEventListener('click', e => {
   if (pick && !e.target.closest('.pp')) togglePicker(false);
+  const sp = e.target.closest('[data-space]');
+  if (sp) { setSpace(sp.dataset.space); return; }
+  if (e.target.closest('#share')) { openSharePop(); return; }
   const af = e.target.closest('[data-acc-filter]');
   if (af) { prefs.accFilter = af.dataset.accFilter; savePrefs(); accForm = null; renderAccounts(); return; }
   const preset = e.target.closest('[data-preset]');
@@ -1150,7 +1205,7 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (!el) return;
   // clicks inside the profile dialog shouldn't close it via the backdrop
-  if (el.id === 'profile-modal' && e.target !== el) return;
+  if ((el.id === 'profile-modal' || el.id === 'share-pop') && e.target !== el) return;
   const id = el.dataset.id;
   switch (el.dataset.act) {
     case 'menu': document.body.classList.add('menu-open'); break;
@@ -1162,7 +1217,9 @@ document.addEventListener('click', e => {
     case 'pp-prev': pick.m--; if (pick.m < 0) { pick.m = 11; pick.y--; } renderPicker(); break;
     case 'pp-next': pick.m++; if (pick.m > 11) { pick.m = 0; pick.y++; } renderPicker(); break;
     case 'pp-apply': setCustom(pick.s, pick.e || pick.s); togglePicker(false); renderDash(); break;
-    case 'download': downloadCard(); break;
+    case 'download': downloadCard($('#share')); break;
+    case 'sp-close': closeSharePop(); break;
+    case 'sp-download': downloadCard($('#sp-card .share')); break;
     case 'new-trade': openDrawer(todayKey, true); break;
     case 'close': closeDrawer(); break;
     case 'day-summary': setCustom(openDay, openDay); closeDrawer(); renderDash(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
@@ -1233,7 +1290,7 @@ document.addEventListener('submit', e => {
   } else if (form.id === 'acc-form') {
     const start = num(f.get('start'));
     if (isNaN(start)) { toast('Balance no válido'); return; }
-    const data = { name: f.get('name').trim(), firm: f.get('firm').trim(), start: round2(start), status: f.get('status') || '', active: f.get('active') === 'on' };
+    const data = { name: f.get('name').trim(), firm: f.get('firm').trim(), start: round2(start), status: f.has('status') ? f.get('status') : (db.accounts.find(a => a.id === accForm)?.status || ''), active: f.get('active') === 'on' };
     let acc = accForm !== 'new' && db.accounts.find(a => a.id === accForm);
     if (acc) Object.assign(acc, data);
     else db.accounts.push(acc = { id: newId(), ...data });
@@ -1280,6 +1337,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if ($('#lightbox').classList.contains('on')) $('#lightbox').classList.remove('on');
   else if ($('#profile-modal').classList.contains('on')) $('#profile-modal').classList.remove('on');
+  else if ($('#share-pop').classList.contains('on')) closeSharePop();
   else if (pick) togglePicker(false);
   else if (openDay) closeDrawer();
   else document.body.classList.remove('menu-open');
@@ -1289,12 +1347,12 @@ document.addEventListener('keydown', e => {
 function loadScript(src) {
   return new Promise((ok, fail) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
 }
-async function downloadCard() {
+async function downloadCard(node) {
   try {
     if (!window.htmlToImage) await loadScript('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js');
-    const url = await htmlToImage.toPng($('#share'), { pixelRatio: 2, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--share-bg').trim() });
+    const url = await htmlToImage.toPng(node, { pixelRatio: 2, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--share-bg').trim() });
     const a = document.createElement('a');
-    a.href = url; a.download = `resumen-${dash.s === dash.e ? dash.s : dash.s + '_' + dash.e}.png`; a.click();
+    a.href = url; a.download = `resumen-${space}-${dash.s === dash.e ? dash.s : dash.s + '_' + dash.e}.png`; a.click();
   } catch (err) { toast('No se pudo generar la imagen'); }
 }
 
@@ -1303,7 +1361,7 @@ function exportData() {
   const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `journal-${todayKey}.json`;
+  a.download = `journal-${space}-${todayKey}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -1347,6 +1405,36 @@ function toast(msg) {
   t.textContent = msg; t.classList.add('on');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('on'), 2400);
+}
+
+/* ---------- spaces ---------- */
+function paintSpace() {
+  document.querySelectorAll('[data-space]').forEach(b => {
+    b.classList.toggle('on', b.dataset.space === space);
+    b.setAttribute('aria-selected', b.dataset.space === space);
+  });
+  $('#side-space').textContent = SPACES[space];
+}
+function setSpace(s) {
+  if (s === space || !SPACES[s]) return;
+  space = s; prefs.space = s; savePrefs();
+  closeDrawer(); accForm = null;
+  if (uid) listenData();
+  paintSpace(); render();
+}
+
+/* ---------- summary popup ---------- */
+function openSharePop() {
+  const card = $('#share').cloneNode(true);
+  card.removeAttribute('id');
+  card.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+  $('#sp-card').replaceChildren(card);
+  $('#share-pop').classList.add('on');
+  document.body.classList.add('pop-open');
+}
+function closeSharePop() {
+  $('#share-pop').classList.remove('on');
+  document.body.classList.remove('pop-open');
 }
 
 /* ---------- auth ---------- */
@@ -1420,7 +1508,7 @@ if (!configured) {
   document.body.classList.add('loading');
 } else {
   onAuthStateChanged(auth, user => {
-    unsubs.forEach(u => u()); unsubs = [];
+    stopListening();
     closeDrawer();
     if (!user) {
       uid = null; db = normalize({});
@@ -1437,7 +1525,9 @@ if (!configured) {
     uid = user.uid;
     $('#who').textContent = user.email;
     document.body.classList.remove('locked', 'loading');
-    listen();
+    listenProfile();
+    listenData();
+    paintSpace();
     route();
   });
 }
