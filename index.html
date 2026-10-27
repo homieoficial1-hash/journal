@@ -1,0 +1,1293 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" crossorigin="anonymous">
+<style>
+:root{
+  --bg:#09090a; --panel:#101011; --cell:#131314; --raise:#18181a;
+  --line:#1e1e20; --line2:#2b2b2e;
+  --text:#ececed; --soft:#c4c4c7; --muted:#7c7c82; --faint:#4a4a4f;
+  --g:62,207,142; --r:240,104,104; --gold:#d9b45a;
+  --green:rgb(var(--g)); --red:rgb(var(--r));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:dark}
+body{background:var(--bg);color:var(--text);font:14px/1.45 'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+button,input,textarea,select{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+a{color:inherit;text-decoration:none}
+[hidden]{display:none!important}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.pos{color:var(--green)} .neg{color:var(--red)}
+
+.wrap{max-width:1080px;margin:0 auto;padding:28px 24px 56px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:16px}
+.hello{display:flex;align-items:center;gap:8px}
+.me{display:flex;align-items:center;gap:12px;text-align:left;padding:4px 14px 4px 4px;border-radius:999px;transition:background .15s}
+.me:hover{background:var(--panel)}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--raise) center/cover no-repeat;display:grid;place-items:center;font-weight:500;color:var(--soft);border:1px solid var(--line2);flex:none;font-size:15px}
+.me b{display:block;font-weight:500;font-size:16px;letter-spacing:-.015em;line-height:1.2}
+.me small{display:block;font-size:12px;color:var(--muted)}
+.page-name{font-size:13px;color:var(--muted)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:500;letter-spacing:-.01em;font-size:15px}
+.mark{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,var(--text) 0 50%,var(--faint) 50%)}
+
+/* side menu */
+.side{position:fixed;top:0;left:0;bottom:0;width:260px;background:#0c0c0d;border-right:1px solid var(--line);transform:translateX(-100%);transition:transform .25s cubic-bezier(.2,.8,.2,1);z-index:21;display:flex;flex-direction:column;padding:20px 14px}
+.side-scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+body.menu-open .side{transform:none}
+body.menu-open .side-scrim{opacity:1;pointer-events:auto}
+.side-head{display:flex;justify-content:space-between;align-items:center;padding:0 6px 22px}
+.side-nav{display:grid;gap:2px}
+.side-nav a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:8px;color:var(--muted)}
+.side-nav a:hover,.side-nav a.on{color:var(--text);background:var(--raise)}
+.side-foot{margin-top:auto;display:grid;gap:2px;border-top:1px solid var(--line);padding-top:12px}
+.side-foot button{text-align:left;padding:8px 10px;border-radius:8px;font-size:13px;color:var(--muted)}
+.side-foot button:hover{color:var(--text);background:var(--raise)}
+.side-foot small{padding:0 10px 6px;font-size:11px;color:var(--faint)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}
+.stack>*+*{margin-top:16px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.h{font-size:13px;color:var(--muted);font-weight:400}
+.title{font-size:20px;font-weight:500;letter-spacing:-.02em}
+.sub{font-size:13px;color:var(--muted);margin-top:2px}
+
+.icon{width:32px;height:32px;border-radius:8px;color:var(--muted);display:grid;place-items:center;flex:none}
+.icon:hover{background:var(--raise);color:var(--text)}
+.chip{font-size:12px;color:var(--muted);padding:5px 10px;border:1px solid var(--line2);border-radius:999px;white-space:nowrap}
+.chip:hover{color:var(--text)}
+
+/* period picker */
+.filter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.pp{position:relative;min-width:0}
+.pp-btn{display:flex;align-items:center;gap:9px;padding:8px 12px;border:1px solid var(--line2);border-radius:10px;font-size:13px;color:var(--soft);background:var(--panel);max-width:100%}
+.pp-btn:hover{color:var(--text);border-color:var(--faint)}
+.pp-btn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-btn b{font-weight:500;color:var(--text)}
+.pp-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:15;background:#0f0f10;border:1px solid var(--line2);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.55);display:flex;width:max-content;max-width:calc(100vw - 32px)}
+.pp-presets{display:grid;align-content:start;gap:2px;padding:10px;border-right:1px solid var(--line);min-width:160px}
+.pp-presets button{text-align:left;padding:7px 10px;border-radius:7px;font-size:13px;color:var(--muted)}
+.pp-presets button:hover,.pp-presets button.on{background:var(--raise);color:var(--text)}
+.pp-cal{padding:14px 16px;width:292px}
+.pp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:13px;font-weight:500;text-transform:capitalize}
+.pp-grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px}
+.pp-grid .dw{font-size:11px;color:var(--faint);text-align:center;padding:4px 0}
+.pp-grid button{height:34px;font-size:12px;color:var(--soft)}
+.pp-grid button:hover{background:var(--raise);border-radius:8px}
+.pp-grid button.in{background:rgba(255,255,255,.06);border-radius:0}
+.pp-grid button.edge{background:var(--text);color:var(--bg);border-radius:8px;font-weight:500}
+.pp-grid button.tod{text-decoration:underline;text-underline-offset:3px}
+.pp-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--muted);gap:8px}
+
+/* summary card */
+.share{--tone:var(--g);position:relative;overflow:hidden;isolation:isolate;border-radius:20px;border:1px solid #242428;padding:24px 28px 22px;background:#0f0f11}
+.share.loss{--tone:var(--r)}
+.share::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(80% 110% at 0% 0%,rgba(var(--tone),.17),transparent 62%),radial-gradient(50% 70% at 100% 100%,rgba(var(--tone),.07),transparent 70%)}
+.share::after{content:"";position:absolute;inset:0;z-index:-1;background-image:radial-gradient(rgba(255,255,255,.075) 1px,transparent 1.3px);background-size:12px 12px;-webkit-mask-image:linear-gradient(200deg,transparent 45%,#000 100%);mask-image:linear-gradient(200deg,transparent 45%,#000 100%)}
+/* nowrap keeps the exported PNG identical: html-to-image freezes widths, so any font metric drift would wrap text */
+.s-period,.s-th,.s-label,.s-stats,.s-foot,.s-who{white-space:nowrap}
+.s-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.s-who{display:flex;align-items:center;gap:10px;font-weight:500;font-size:14px}
+.s-who .avatar{width:30px;height:30px;font-size:12px}
+.s-period{font-size:12px;color:var(--muted);text-align:right}
+.s-period b{display:block;color:var(--soft);font-weight:500;font-size:13px}
+.s-grid{display:grid;grid-template-columns:1fr minmax(0,1.05fr);gap:32px;align-items:center}
+.s-label{font-size:13px;color:var(--soft)}
+.s-big{font-size:56px;font-weight:600;letter-spacing:-.04em;line-height:1.05;margin:6px 0 24px;font-feature-settings:"tnum";color:rgb(var(--tone))}
+.s-big.zero{color:var(--soft)}
+.s-stats{display:flex;gap:28px}
+.s-stats span{font-size:12px;color:var(--muted)}
+.s-stats b{display:block;font-size:20px;font-weight:500;letter-spacing:-.02em;margin-top:1px}
+.s-table{background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden}
+.s-th{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;font-size:12px;font-weight:500}
+.s-syms{display:flex;gap:4px}
+.s-syms span{font-size:10px;font-weight:500;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--soft)}
+.s-row{display:grid;grid-template-columns:minmax(0,1.4fr) 1fr .9fr;gap:8px;padding:8px 14px;font-size:12px;border-top:1px solid rgba(255,255,255,.055)}
+.s-row>:not(:first-child){text-align:right}
+.s-row>:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-row.hd{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:6px;padding-bottom:6px}
+.s-empty{padding:18px 14px;font-size:12px;color:var(--muted);border-top:1px solid rgba(255,255,255,.055)}
+.s-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;font-size:11px;color:var(--muted)}
+.s-foot b{display:block;color:var(--soft);font-size:13px;font-weight:500}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.metric span{font-size:12px;color:var(--muted)}
+.metric b{display:block;font-size:22px;font-weight:500;letter-spacing:-.02em;margin:4px 0 2px}
+.metric small{font-size:12px;color:var(--muted)}
+.bar{height:4px;border-radius:4px;background:rgba(var(--r),.5);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:var(--green)}
+
+/* heatmap */
+.heat-scroll{position:relative;overflow-x:auto;padding-bottom:4px}
+.heat{display:grid;gap:4px;width:100%}
+.heat .lbl{font-size:11px;color:var(--muted);line-height:14px;white-space:nowrap;align-self:center}
+.hc{width:14px;height:14px;border-radius:3px;background:#17171a}
+.heat .hc{width:auto;height:auto;aspect-ratio:1}
+button.hc:hover{outline:1px solid var(--line2);outline-offset:1px}
+.hc.fut{background:#111113}
+.hc.be{background:#2c2c30}
+.hc.g1{background:rgba(var(--g),.22)} .hc.g2{background:rgba(var(--g),.42)} .hc.g3{background:rgba(var(--g),.68)} .hc.g4{background:rgba(var(--g),.95)}
+.hc.r1{background:rgba(var(--r),.22)} .hc.r2{background:rgba(var(--r),.42)} .hc.r3{background:rgba(var(--r),.68)} .hc.r4{background:rgba(var(--r),.95)}
+.hc.tod{box-shadow:0 0 0 1px var(--soft)}
+.legend{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)}
+.legend .hc{width:10px;height:10px;border-radius:2px}
+.legend span:first-child{margin-right:4px} .legend span:last-child{margin-left:4px}
+
+/* month */
+.nav{display:flex;align-items:center;gap:6px}
+.month{font-size:20px;font-weight:500;letter-spacing:-.02em;margin-right:6px;text-transform:capitalize}
+.cal-right{display:flex;align-items:center;gap:16px}
+.total{font-size:22px;font-weight:500;letter-spacing:-.02em}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) minmax(0,1fr);gap:6px}
+.dow{font-size:12px;color:var(--muted);padding:0 4px 4px}
+.dow.wk{text-align:right}
+.day{position:relative;min-height:96px;background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:left;display:flex;flex-direction:column;transition:border-color .15s,background .15s}
+button.day:hover{border-color:var(--line2);background:var(--raise)}
+.day.blank{background:transparent;border-color:transparent}
+.day.up{background:rgba(var(--g),.055);border-color:rgba(var(--g),.16)}
+.day.dn{background:rgba(var(--r),.06);border-color:rgba(var(--r),.17)}
+button.day.up:hover{background:rgba(var(--g),.09)} button.day.dn:hover{background:rgba(var(--r),.1)}
+.day .n{font-size:12px;color:var(--muted)}
+.day.today .n{color:var(--bg);background:var(--text);border-radius:999px;width:22px;height:22px;display:grid;place-items:center;margin:-3px 0 0 -4px;font-weight:500}
+.day .p{margin-top:auto;font-size:15px;font-weight:500}
+.day .c{font-size:11px;color:var(--muted)}
+.week{min-height:96px;padding:10px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;border-left:1px solid var(--line)}
+.week .p{font-size:15px;font-weight:500}
+.week .c{font-size:11px;color:var(--muted)}
+.week .p.zero{color:var(--faint)}
+
+/* tables (accounts, withdrawals) */
+.tbl{display:grid}
+.tr{display:grid;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:13px}
+.tr.hd{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;border-top:0;padding-top:0}
+.tr .r{text-align:right}
+.acc-t .tr{grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr)) 150px}
+.wd-t .tr{grid-template-columns:110px minmax(0,1fr) minmax(0,1.4fr) 110px 70px}
+.nm{font-weight:500}
+.nm small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.off{opacity:.45}
+.acts{display:flex;justify-content:flex-end;gap:2px}
+.acts button{font-size:12px;color:var(--muted);padding:4px 7px;border-radius:6px}
+.acts button:hover{color:var(--text);background:var(--raise)}
+.acts button.del:hover{color:var(--red)}
+.kpis{display:flex;gap:32px;margin-bottom:22px;font-size:12px;color:var(--muted)}
+.kpis b{display:block;font-weight:500;font-size:18px;color:var(--text);margin-top:2px;letter-spacing:-.01em}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(540px,100%);background:#0c0c0d;border-left:1px solid var(--line);transform:translateX(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1);overflow-y:auto;z-index:11;overscroll-behavior:contain}
+body.drawer-open{overflow:hidden}
+body.drawer-open .scrim{opacity:1;pointer-events:auto}
+body.drawer-open .drawer{transform:none}
+.d-head{position:sticky;top:0;background:rgba(12,12,13,.94);backdrop-filter:blur(8px);padding:20px 24px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;z-index:1}
+.d-date{font-size:17px;font-weight:500;letter-spacing:-.01em}
+.d-date:first-letter{text-transform:uppercase}
+.d-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.d-sub button{font-size:12px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;margin-left:6px}
+.d-sub button:hover{color:var(--text)}
+.d-body{padding:20px 24px 48px;display:flex;flex-direction:column;gap:28px}
+.sec-t{font-size:12px;color:var(--muted);margin-bottom:10px}
+
+.trade{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.trade + .trade{margin-top:10px}
+.t-head{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.sym{font-weight:500}
+.t-acc{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tag{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);flex:none}
+.t-head .mono{margin-left:auto;font-weight:500;flex:none}
+.shot{display:block;width:100%;border-top:1px solid var(--line);background:#000;cursor:zoom-in}
+.shot-fail{display:block;padding:12px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);word-break:break-all}
+.t-note{padding:12px 14px;border-top:1px solid var(--line);color:var(--soft);white-space:pre-wrap;word-wrap:break-word}
+.t-tools{display:flex;gap:4px;padding:6px 8px;border-top:1px solid var(--line)}
+.t-tools button{font-size:12px;color:var(--muted);padding:4px 8px;border-radius:6px}
+.t-tools button:hover{color:var(--text);background:var(--raise)}
+.t-tools button.del:hover{color:var(--red)}
+
+.add{width:100%;padding:11px;border:1px dashed var(--line2);border-radius:12px;color:var(--muted);font-size:13px}
+.add:hover{color:var(--text);border-color:var(--faint)}
+
+/* forms */
+.form{border:1px solid var(--line2);border-radius:12px;padding:16px;display:grid;gap:12px;background:var(--panel)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px}
+.field{display:grid;gap:6px;align-content:start;min-width:0}
+.field>span{font-size:12px;color:var(--muted)}
+.inp{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;outline:none;transition:border-color .15s}
+.inp:focus{border-color:#55555b}
+select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237c7c82' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:28px}
+input[type=date].inp{color-scheme:dark}
+textarea.inp{resize:vertical;min-height:72px;line-height:1.5}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:2px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{flex:1;text-align:center;padding:6px 0;border-radius:6px;font-size:13px;color:var(--muted);cursor:pointer}
+.seg input:checked + label{background:var(--raise);color:var(--text)}
+.seg input:checked + label.lg{color:var(--green)}
+.seg input:checked + label.ls{color:var(--red)}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--soft);cursor:pointer}
+.check input{accent-color:var(--text)}
+.hint{font-size:11px;color:var(--faint)}
+.hint a{text-decoration:underline;text-underline-offset:2px}
+.f-actions{display:flex;justify-content:flex-end;gap:8px}
+.btn{padding:8px 14px;border-radius:8px;font-size:13px;color:var(--muted);white-space:nowrap}
+.btn:hover{color:var(--text)}
+.btn.pri{background:var(--text);color:var(--bg);font-weight:500}
+.btn.pri:hover{background:#fff}
+.btn.line{border:1px solid var(--line2);color:var(--soft)}
+.btn.line:hover{color:var(--text);border-color:var(--faint)}
+.wd-form{display:grid;grid-template-columns:150px minmax(0,1fr) 130px minmax(0,1.3fr) auto;gap:8px;align-items:end;margin-bottom:24px}
+
+.empty{font-size:13px;color:var(--faint);padding:14px 0}
+
+/* profile modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:25;padding:16px}
+.modal-bg.on{display:grid}
+.modal{width:min(380px,100%);background:#0f0f10;border:1px solid var(--line2);border-radius:16px;padding:22px;display:grid;gap:18px}
+.pf-photo{display:flex;align-items:center;gap:16px}
+.pf-photo .avatar{width:64px;height:64px;font-size:22px}
+.pf-photo div{display:flex;gap:6px;flex-wrap:wrap}
+
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;place-items:center;z-index:30;padding:24px;cursor:zoom-out}
+.lightbox.on{display:grid}
+.lightbox img{max-width:100%;max-height:100%;border-radius:8px}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);font-size:13px;padding:9px 14px;border-radius:999px;opacity:0;transition:.2s;z-index:40;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%)}
+
+/* login */
+.gate{display:none;min-height:100vh;place-items:center;padding:24px}
+body.locked .gate{display:grid}
+body.locked .wrap,body.locked .side,body.locked .side-scrim{display:none}
+.gate-box{width:min(320px,100%);text-align:center;display:grid;justify-items:center;gap:12px}
+.gate-box .mark{width:34px;height:34px;border-radius:9px;margin-bottom:6px}
+.gate-box h1{font-size:22px;font-weight:500;letter-spacing:-.02em}
+.gate-box p{color:var(--muted);font-size:13px;min-height:20px}
+.gbtn{display:flex;align-items:center;gap:10px;justify-content:center;width:100%;margin-top:8px;padding:11px 16px;border-radius:10px;background:var(--text);color:var(--bg);font-weight:500}
+.gbtn:hover{background:#fff}
+body.loading .gbtn{visibility:hidden}
+
+@media (max-width:860px){
+  .acc-t .tr{grid-template-columns:minmax(0,1fr) auto;gap:4px 12px}
+  .acc-t .tr.hd{display:none}
+  .acc-t .tr>.c-start,.acc-t .tr>.c-pnl,.acc-t .tr>.c-wd{display:none}
+  .acc-t .acts{grid-column:1/-1;justify-content:flex-start;margin-left:-7px}
+  .wd-form{grid-template-columns:1fr 1fr}
+  .wd-form .wide{grid-column:1/-1}
+  .wd-t .tr{grid-template-columns:76px minmax(0,1fr) auto auto;gap:10px}
+  .wd-t .tr>:first-child{font-size:12px}
+  .wd-t .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wd-t .tr.hd{display:none}
+  .wd-t .c-note{display:none}
+}
+@media (max-width:760px){
+  .wrap{padding:16px 16px 40px}
+  .top{margin-bottom:20px}
+  .page-name{display:none}
+  .card{padding:16px;border-radius:14px}
+  .share{padding:20px 18px 18px}
+  .s-top{margin-bottom:20px}
+  .s-grid{grid-template-columns:1fr;gap:20px}
+  .s-big{font-size:42px;margin-bottom:18px}
+  .s-stats{gap:20px}
+  .s-row{grid-template-columns:minmax(0,1fr) auto auto;gap:10px;font-size:11px;padding-left:12px;padding-right:12px}
+  .s-foot{margin-top:20px}
+  .metrics{grid-template-columns:1fr 1fr}
+  .pp-pop{flex-direction:column;position:fixed;left:16px;right:16px;top:auto;max-width:none;width:auto}
+  .pp-presets{border-right:0;border-bottom:1px solid var(--line);grid-template-columns:1fr 1fr}
+  .pp-cal{width:100%}
+  .card-head.cal-head{flex-wrap:wrap}
+  .cal-right{width:100%;justify-content:space-between}
+  .cal{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+  .dow.wk,.week{display:none}
+  .day{min-height:62px;padding:6px;border-radius:8px}
+  .day .p{font-size:10px;letter-spacing:-.02em}
+  .day .c{display:none}
+  .day.today .n{width:18px;height:18px;margin:-2px 0 0 -2px;font-size:11px}
+  .month{font-size:17px;margin-right:2px}
+  .total{font-size:17px}
+  .kpis{gap:20px;flex-wrap:wrap}
+  .d-head,.d-body{padding-left:16px;padding-right:16px}
+  .row3{grid-template-columns:1fr 1fr}
+  .row3>:first-child{grid-column:1/-1}
+}
+</style>
+</head>
+<body class="locked loading">
+<div class="gate">
+  <div class="gate-box">
+    <i class="mark"></i>
+    <h1>Journal</h1>
+    <p id="gate-msg">Cargando…</p>
+    <button class="gbtn" data-act="login"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.8-2.1 5.1-4.4 6.7v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.2z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41.1 15.5 46 24 46z"/><path fill="#FBBC05" d="M11.8 28.3c-.4-1.3-.7-2.8-.7-4.3s.3-3 .7-4.3V14H4.5C3 17 2 20.4 2 24s.9 7 2.5 10l7.3-5.7z"/><path fill="#EA4335" d="M24 10.7c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.2 29.9 2 24 2 15.5 2 8.1 6.9 4.5 14l7.3 5.7c1.7-5.2 6.5-9 12.2-9z"/></svg>Continuar con Google</button>
+  </div>
+</div>
+
+<aside class="side" id="side" aria-label="Menú">
+  <div class="side-head">
+    <div class="brand"><i class="mark"></i>Journal</div>
+    <button class="icon" data-act="menu-close" aria-label="Cerrar menú"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  </div>
+  <nav class="side-nav">
+    <a href="#/" data-page="home"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 7 8 2.5 13.5 7v6a.5.5 0 0 1-.5.5H10V10H6v3.5H3a.5.5 0 0 1-.5-.5V7Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>Inicio</a>
+    <a href="#/cuentas" data-page="cuentas"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3.5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5h12" stroke="currentColor" stroke-width="1.3"/></svg>Cuentas</a>
+    <a href="#/retiros" data-page="retiros"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 13V3.5M4 7.5 8 3.5l4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Retiros</a>
+  </nav>
+  <div class="side-foot">
+    <small id="who"></small>
+    <button data-act="profile">Editar perfil</button>
+    <button data-act="export">Exportar copia</button>
+    <button data-act="import">Importar copia</button>
+    <button data-act="logout">Cerrar sesión</button>
+    <input type="file" id="file" accept="application/json" hidden>
+  </div>
+</aside>
+<div class="side-scrim" data-act="menu-close"></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="hello">
+      <button class="icon" data-act="menu" aria-label="Abrir menú"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 5.5h12M3 9h12M3 12.5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button class="me" data-act="profile" aria-label="Editar perfil"><span class="avatar" id="avatar"></span><span><b id="hello"></b><small>Trading journal</small></span></button>
+    </div>
+    <div class="page-name" id="page-name"></div>
+  </header>
+
+  <!-- Inicio -->
+  <main id="page-home" class="stack">
+    <section>
+      <div class="filter">
+        <div class="pp">
+          <button class="pp-btn" data-act="pp-toggle"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span id="p-label"></span><svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="pp-pop" id="pp-pop" hidden></div>
+        </div>
+        <button class="btn line" data-act="download">Descargar</button>
+      </div>
+      <div class="share" id="share"></div>
+      <div class="metrics" id="metrics"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="h" id="heat-title"></div>
+        <div class="legend"><span>Pérdida</span><i class="hc r4"></i><i class="hc r2"></i><i class="hc"></i><i class="hc g2"></i><i class="hc g4"></i><span>Ganancia</span></div>
+      </div>
+      <div class="heat-scroll"><div class="heat" id="heat"></div></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head cal-head">
+        <div class="nav">
+          <div class="month" id="month-title"></div>
+          <button class="icon" data-act="prev" aria-label="Mes anterior"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="icon" data-act="next" aria-label="Mes siguiente"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="chip" data-act="today">Hoy</button>
+        </div>
+        <div class="cal-right">
+          <div class="total mono" id="month-total"></div>
+          <button class="btn pri" data-act="new-trade">+ Agregar trade</button>
+        </div>
+      </div>
+      <div class="cal" id="cal"></div>
+    </section>
+  </main>
+
+  <!-- Cuentas -->
+  <main id="page-cuentas" hidden>
+    <section class="card" id="accounts"></section>
+  </main>
+
+  <!-- Retiros -->
+  <main id="page-retiros" hidden>
+    <section class="card" id="withdrawals"></section>
+  </main>
+</div>
+
+<div class="scrim" data-act="close"></div>
+<aside class="drawer" id="drawer" aria-label="Detalle del día"></aside>
+<div class="modal-bg" id="profile-modal" data-act="pf-close">
+  <form class="modal" id="pf-form">
+    <div class="title" style="font-size:17px">Perfil</div>
+    <div class="pf-photo">
+      <span class="avatar" id="pf-avatar"></span>
+      <div>
+        <button type="button" class="btn line" data-act="pf-pick">Cambiar foto</button>
+        <button type="button" class="btn" data-act="pf-remove">Quitar</button>
+      </div>
+      <input type="file" id="pf-file" accept="image/*" hidden>
+    </div>
+    <label class="field"><span>Nombre</span><input class="inp" name="name" placeholder="¿Cómo te dicen?" autocomplete="off" maxlength="30"></label>
+    <div class="f-actions">
+      <button type="button" class="btn" data-act="pf-close">Cancelar</button>
+      <button type="submit" class="btn pri">Guardar</button>
+    </div>
+  </form>
+</div>
+<div class="lightbox" id="lightbox" data-act="lb-close"><img alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { firebaseConfig, ALLOWED_EMAIL } from './firebase-config.js';
+
+const VIEW_KEY = 'trading-journal.view';
+const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const MONTHS_S = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const CHEV_L = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEV_R = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (k, n) => { const d = parse(k); d.setDate(d.getDate() + n); return iso(d); };
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const usd0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const money = v => (v < 0 ? '-' : v > 0 ? '+' : '') + usd.format(Math.abs(v));
+const tone = v => v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+const round2 = v => Math.round(v * 100) / 100;
+const num = v => parseFloat(String(v).replace(/[$,\s]/g, ''));
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+function compact(v) {
+  const a = Math.abs(v);
+  let s;
+  if (a >= 1e6) s = (a / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  else if (a >= 1e4) s = Math.round(a / 1e3) + 'K';
+  else if (a >= 1e3) s = (a / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  else s = String(Math.round(a));
+  return (v < 0 ? '-' : '') + '$' + s;
+}
+const shortDate = k => { const d = parse(k); return `${d.getDate()} ${MONTHS_S[d.getMonth()]} ${d.getFullYear()}`; };
+
+// TradingView snapshot links (tradingview.com/x/ID/) point to a page, not an image.
+// The image itself lives at s3.tradingview.com/snapshots/<first letter>/<ID>.png
+function imageUrl(url) {
+  const m = String(url || '').match(/tradingview\.com\/x\/([A-Za-z0-9]+)/);
+  return m ? `https://s3.tradingview.com/snapshots/${m[1][0].toLowerCase()}/${m[1]}.png` : url;
+}
+
+/* ---------- storage ---------- */
+function normalize(d) {
+  // Earlier versions split one trade across several accounts; now each trade belongs to one account
+  const trades = [];
+  for (const t of d.trades || []) {
+    const { accounts, ...rest } = t;
+    if (accounts && accounts.length) accounts.forEach((a, i) => trades.push({ ...rest, id: i ? `${t.id}-${i}` : t.id, accountId: a.id, pnl: a.pnl }));
+    else trades.push(rest);
+  }
+  return { trades, withdrawals: d.withdrawals || [], notes: d.notes || {}, accounts: d.accounts || [], profile: d.profile || { name: 'Homie', photo: '' } };
+}
+let db = normalize({});
+
+/* ---------- Firestore ----------
+   users/{uid}                 → { profile }
+   users/{uid}/trades/{id}     users/{uid}/accounts/{id}
+   users/{uid}/withdrawals/{id} users/{uid}/notes/{YYYY-MM-DD} → { text } */
+const configured = !!firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('PEGA');
+let auth, fs, uid = null, unsubs = [];
+if (configured) {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  fs = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+}
+const userRef = () => doc(fs, 'users', uid);
+const ref = (name, id) => doc(fs, 'users', uid, name, id);
+const failed = err => { console.error(err); toast('No se pudo guardar (' + (err.code || 'error') + ')'); };
+const put = (name, obj) => setDoc(ref(name, obj.id), obj).catch(failed);
+const drop = (name, id) => deleteDoc(ref(name, id)).catch(failed);
+const saveProfile = () => setDoc(userRef(), { profile: db.profile }, { merge: true }).catch(failed);
+const saveNote = k => (db.notes[k] ? setDoc(ref('notes', k), { text: db.notes[k] }) : deleteDoc(ref('notes', k))).catch(failed);
+
+function listen() {
+  // Our own writes arrive with hasPendingWrites and were already rendered locally;
+  // only snapshots from the server (first load, other devices) need a re-render.
+  const after = snap => { if (!snap.metadata.hasPendingWrites) remoteRender(); };
+  const denied = err => { console.error(err); deniedMsg = 'Esta cuenta no tiene acceso a los datos.'; signOut(auth); };
+  const list = (name, fn) => onSnapshot(collection(fs, 'users', uid, name), s => { fn(s.docs); after(s); }, denied);
+  unsubs = [
+    list('trades', d => db.trades = d.map(x => x.data())),
+    list('accounts', d => db.accounts = d.map(x => x.data())),
+    list('withdrawals', d => db.withdrawals = d.map(x => x.data())),
+    list('notes', d => db.notes = Object.fromEntries(d.map(x => [x.id, x.data().text]))),
+    onSnapshot(userRef(), s => { db.profile = s.data()?.profile || { name: 'Homie', photo: '' }; after(s); }, denied),
+  ];
+}
+let rr;
+function remoteRender() {
+  cancelAnimationFrame(rr);
+  rr = requestAnimationFrame(() => {
+    renderPage();
+    // don't wipe a form or the note being typed in the open day
+    const busy = formOpen || editId || $('#drawer').contains(document.activeElement);
+    if (openDay && !busy) renderDrawer();
+  });
+}
+
+let prefs = {};
+try { prefs = JSON.parse(localStorage.getItem(VIEW_KEY)) || {}; } catch (e) {}
+function savePrefs() { try { localStorage.setItem(VIEW_KEY, JSON.stringify(prefs)); } catch (e) {} }
+
+/* ---------- state ---------- */
+const now = new Date();
+const todayKey = iso(now);
+const view = { y: now.getFullYear(), m: now.getMonth() };
+const dash = { p: 'week', s: todayKey, e: todayKey };
+let page = 'home';
+let openDay = null, formOpen = false, editId = null;
+let accForm = null; // null | 'new' | account id
+let pick = null;    // date-range picker state while open
+let pfPhoto = null; // photo being edited in the profile modal
+
+const accName = id => db.accounts.find(a => a.id === id)?.name || 'Cuenta eliminada';
+
+function accountTotals(a, endKey = '9999') {
+  let pnl = 0, wd = 0;
+  for (const t of db.trades) if (t.accountId === a.id && t.date <= endKey) pnl += t.pnl;
+  for (const w of db.withdrawals) if (w.accountId === a.id && w.date <= endKey) wd += w.amount;
+  return { pnl, wd, balance: (a.start || 0) + pnl - wd };
+}
+
+function dayMap() {
+  const m = {};
+  for (const t of db.trades) {
+    const s = m[t.date] || (m[t.date] = { pnl: 0, n: 0 });
+    s.pnl += t.pnl; s.n++;
+  }
+  return m;
+}
+
+/* ---------- profile ---------- */
+function paintAvatar(el, photo, name) {
+  el.style.backgroundImage = photo ? `url("${photo}")` : '';
+  el.textContent = photo ? '' : (name || '?').trim().charAt(0).toUpperCase();
+}
+function renderProfile() {
+  paintAvatar($('#avatar'), db.profile.photo, db.profile.name);
+  $('#hello').textContent = `Hola, ${db.profile.name || 'trader'}`;
+}
+function openProfile() {
+  pfPhoto = db.profile.photo;
+  paintAvatar($('#pf-avatar'), pfPhoto, db.profile.name);
+  $('#pf-form').name.value = db.profile.name || '';
+  $('#profile-modal').classList.add('on');
+  document.body.classList.remove('menu-open');
+}
+// Square-crop and shrink the photo so it stays small inside the profile document
+function resizeImage(file, size = 192) {
+  return new Promise((ok, fail) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const r = Math.max(size / img.width, size / img.height);
+      const w = img.width * r, h = img.height * r;
+      c.getContext('2d').drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      URL.revokeObjectURL(img.src);
+      ok(c.toDataURL('image/jpeg', 0.86));
+    };
+    img.onerror = fail;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* ---------- period ---------- */
+const PRESETS = [['day', 'Hoy'], ['week', 'Esta semana'], ['month', 'Este mes'], ['year', 'Este año'], ['7d', 'Últimos 7 días'], ['30d', 'Últimos 30 días']];
+const PERIOD_NAME = { day: 'Resumen diario', week: 'Resumen semanal', month: 'Resumen mensual', year: 'Resumen anual', '7d': 'Últimos 7 días', '30d': 'Últimos 30 días', custom: 'Resumen' };
+const PERIOD_TITLE = { day: 'Ganancia del día', week: 'Ganancia de la semana', month: 'Ganancia del mes', year: 'Ganancia del año', '7d': 'Ganancia · últimos 7 días', '30d': 'Ganancia · últimos 30 días', custom: 'Ganancia del periodo' };
+
+function setPeriod(p) {
+  const t = now;
+  dash.p = p;
+  if (p === 'day') dash.s = dash.e = todayKey;
+  else if (p === 'week') { const s = new Date(t); s.setDate(t.getDate() - ((t.getDay() + 6) % 7)); dash.s = iso(s); dash.e = addDays(dash.s, 6); }
+  else if (p === 'month') { dash.s = iso(new Date(t.getFullYear(), t.getMonth(), 1)); dash.e = iso(new Date(t.getFullYear(), t.getMonth() + 1, 0)); }
+  else if (p === 'year') { dash.s = `${t.getFullYear()}-01-01`; dash.e = `${t.getFullYear()}-12-31`; }
+  else if (p === '7d') { dash.s = addDays(todayKey, -6); dash.e = todayKey; }
+  else if (p === '30d') { dash.s = addDays(todayKey, -29); dash.e = todayKey; }
+  prefs.p = p; savePrefs();
+}
+function setCustom(s, e) {
+  dash.p = 'custom'; dash.s = s; dash.e = e;
+}
+function rangeLabel(s, e) {
+  const a = parse(s), b = parse(e);
+  if (s === e) return a.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  if (a.getDate() === 1 && addDays(e, 1).endsWith('-01') && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) return `${MONTHS[a.getMonth()]} ${a.getFullYear()}`;
+  if (s.endsWith('-01-01') && e === `${a.getFullYear()}-12-31`) return String(a.getFullYear());
+  if (a.getFullYear() !== b.getFullYear()) return `${shortDate(s)} – ${shortDate(e)}`;
+  if (a.getMonth() !== b.getMonth()) return `${a.getDate()} ${MONTHS_S[a.getMonth()]} – ${b.getDate()} ${MONTHS_S[b.getMonth()]} ${b.getFullYear()}`;
+  return `${a.getDate()} – ${b.getDate()} ${MONTHS_S[b.getMonth()]} ${b.getFullYear()}`;
+}
+const periodKind = () => dash.p === 'custom' && dash.s === dash.e ? 'day' : dash.p;
+
+function renderPicker() {
+  const { y, m, s, e } = pick;
+  const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+  let cells = DOW.map(d => `<span class="dw">${d.slice(0, 2)}</span>`).join('');
+  cells += '<span></span>'.repeat(first);
+  for (let d = 1; d <= days; d++) {
+    const k = `${y}-${pad(m + 1)}-${pad(d)}`;
+    let cls = '';
+    if (k === s || k === e) cls = 'edge';
+    else if (s && e && k > s && k < e) cls = 'in';
+    if (k === todayKey) cls += ' tod';
+    cells += `<button type="button" class="${cls}" data-pick="${k}">${d}</button>`;
+  }
+  $('#pp-pop').innerHTML = `
+    <div class="pp-presets">${PRESETS.map(([p, l]) => `<button type="button" class="${dash.p === p ? 'on' : ''}" data-preset="${p}">${l}</button>`).join('')}</div>
+    <div class="pp-cal">
+      <div class="pp-head"><button type="button" class="icon" data-act="pp-prev" aria-label="Mes anterior">${CHEV_L}</button><span>${MONTHS[m]} ${y}</span><button type="button" class="icon" data-act="pp-next" aria-label="Mes siguiente">${CHEV_R}</button></div>
+      <div class="pp-grid">${cells}</div>
+      <div class="pp-foot"><span>${s ? (e && e !== s ? `${shortDate(s)} – ${shortDate(e)}` : `${shortDate(s)} · elige el final`) : 'Elige el inicio'}</span><button type="button" class="btn pri" data-act="pp-apply" ${s ? '' : 'disabled'}>Aplicar</button></div>
+    </div>`;
+}
+function togglePicker(open = $('#pp-pop').hidden) {
+  $('#pp-pop').hidden = !open;
+  if (open) {
+    const a = parse(dash.e > todayKey && dash.s <= todayKey ? todayKey : dash.e);
+    pick = { y: a.getFullYear(), m: a.getMonth(), s: dash.s, e: dash.e };
+    renderPicker();
+  } else pick = null;
+}
+
+/* ---------- dashboard ---------- */
+function renderDash() {
+  const s = dash.s, e = dash.e;
+  const trades = db.trades.filter(t => t.date >= s && t.date <= e);
+  const label = rangeLabel(s, e);
+  const kind = periodKind();
+  const preset = PRESETS.find(([p]) => p === dash.p);
+  $('#p-label').innerHTML = preset ? `<b>${preset[1]}</b> · ${label}` : `<b>${label.charAt(0).toUpperCase() + label.slice(1)}</b>`;
+
+  let pnl = 0, wins = 0, losses = 0, gw = 0, gl = 0, unassigned = 0, hasUnassigned = false;
+  const perAcc = new Map(), days = {}, syms = new Set();
+  for (const t of trades) {
+    pnl += t.pnl; syms.add(t.symbol);
+    if (t.pnl > 0) { wins++; gw += t.pnl; } else if (t.pnl < 0) { losses++; gl -= t.pnl; }
+    days[t.date] = (days[t.date] || 0) + t.pnl;
+    if (t.accountId) perAcc.set(t.accountId, (perAcc.get(t.accountId) || 0) + t.pnl);
+    else { unassigned += t.pnl; hasUnassigned = true; }
+  }
+  pnl = round2(pnl);
+
+  const rows = [...perAcc].map(([id, v]) => {
+    const a = db.accounts.find(x => x.id === id);
+    return { name: accName(id), pnl: v, balance: a ? accountTotals(a, e).balance : null };
+  }).sort((x, y) => x.name.localeCompare(y.name, 'es', { numeric: true }));
+  if (hasUnassigned) rows.push({ name: 'Sin cuenta', pnl: unassigned, balance: null });
+
+  const listed = rows.filter(r => r.balance !== null);
+  const balAccs = listed.length ? null : db.accounts.filter(a => a.active !== false);
+  const totalBal = listed.length ? listed.reduce((x, r) => x + r.balance, 0) : balAccs.reduce((x, a) => x + accountTotals(a, e).balance, 0);
+  const accCount = listed.length || balAccs.length;
+  const cap = kind === 'day' || /^[a-z]/.test(label);
+
+  const sh = $('#share');
+  sh.className = 'share' + (pnl < 0 ? ' loss' : '');
+  sh.innerHTML = `
+    <div class="s-top">
+      <div class="s-who"><span class="avatar" id="s-avatar"></span>${esc(db.profile.name || 'Journal')}</div>
+      <div class="s-period"><b>${PERIOD_NAME[kind]}</b><span style="text-transform:${cap ? 'capitalize' : 'none'}">${label}</span></div>
+    </div>
+    <div class="s-grid">
+      <div>
+        <div class="s-label">${PERIOD_TITLE[kind]}</div>
+        <div class="s-big ${pnl ? '' : 'zero'}">${pnl < 0 ? '-' : ''}${usd.format(Math.abs(pnl))}</div>
+        <div class="s-stats">
+          <div><span>Balance total</span><b>${usd0.format(totalBal)}</b></div>
+          <div><span>Cuentas</span><b>${accCount}</b></div>
+          <div><span>Trades</span><b>${trades.length}</b></div>
+        </div>
+      </div>
+      <div class="s-table">
+        <div class="s-th"><span>Cuentas operadas</span><div class="s-syms">${[...syms].slice(0, 4).map(x => `<span>${esc(x)}</span>`).join('')}</div></div>
+        ${rows.length ? `<div class="s-row hd"><span>Cuenta</span><span>Balance</span><span>P&amp;L</span></div>` + rows.map(r => `
+          <div class="s-row"><span>${esc(r.name)}</span><span class="mono">${r.balance === null ? '—' : usd.format(r.balance)}</span><span class="mono ${tone(r.pnl)}">${money(round2(r.pnl))}</span></div>`).join('')
+          : `<div class="s-empty">Sin operaciones en este periodo.</div>`}
+      </div>
+    </div>
+    <div class="s-foot"><div>Trading journal<b>${s === e ? shortDate(s) : `${shortDate(s)} – ${shortDate(e)}`}</b></div><div>${wins + losses ? `${Math.round(wins / (wins + losses) * 100)}% win rate` : ''}</div></div>`;
+  paintAvatar($('#s-avatar'), db.profile.photo, db.profile.name || 'J');
+
+  const wr = wins + losses ? wins / (wins + losses) : 0;
+  const dayVals = Object.values(days);
+  const green = dayVals.filter(v => v > 0).length;
+  const best = dayVals.length ? Math.max(...dayVals) : 0, worst = dayVals.length ? Math.min(...dayVals) : 0;
+  $('#metrics').innerHTML = `
+    <div class="metric"><span>Win rate</span><b class="mono">${wins + losses ? Math.round(wr * 100) + '%' : '—'}</b><small>${wins} ganados · ${losses} perdidos</small>${wins + losses ? `<div class="bar"><i style="width:${wr * 100}%"></i></div>` : ''}</div>
+    <div class="metric"><span>Profit factor</span><b class="mono">${gl ? (gw / gl).toFixed(2) : gw ? '∞' : '—'}</b><small>${usd0.format(gw)} / ${usd0.format(gl)}</small></div>
+    <div class="metric"><span>Prom. ganador / perdedor</span><b class="mono"><span class="pos">${wins ? compact(gw / wins) : '—'}</span> <span style="color:var(--faint)">/</span> <span class="neg">${losses ? compact(-gl / losses) : '—'}</span></b><small>por trade</small></div>
+    <div class="metric"><span>Días en verde</span><b class="mono">${green}/${dayVals.length}</b><small>${dayVals.length ? `Mejor ${compact(best)} · Peor ${compact(worst)}` : 'Sin días operados'}</small></div>`;
+}
+
+/* ---------- heatmap ---------- */
+function renderHeat(S) {
+  const y = view.y;
+  const jan1 = new Date(y, 0, 1);
+  const start = new Date(jan1);
+  start.setDate(1 - ((jan1.getDay() + 6) % 7)); // Monday on/before Jan 1
+  const cols = Math.ceil(((new Date(y, 11, 31) - start) / 864e5 + 1) / 7);
+
+  let max = 0;
+  for (const k in S) if (k.startsWith(y + '-') && S[k].n) max = Math.max(max, Math.abs(S[k].pnl));
+
+  const heat = $('#heat');
+  heat.style.gridTemplateColumns = `30px repeat(${cols}, minmax(0, 1fr))`;
+  heat.style.gridTemplateRows = `14px`;
+  heat.style.minWidth = `${30 + cols * 15}px`;
+
+  let h = '';
+  ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].forEach((n, i) => h += `<span class="lbl" style="grid-area:${i + 2}/1">${n}</span>`);
+  let lastM = -1;
+  for (let c = 0; c < cols; c++) {
+    const mon = new Date(start); mon.setDate(start.getDate() + c * 7);
+    const ref = mon.getFullYear() === y ? mon : jan1;
+    if (ref.getFullYear() === y && ref.getMonth() !== lastM && !(c > 0 && ref.getDate() > 7)) {
+      lastM = ref.getMonth();
+      h += `<span class="lbl" style="grid-area:1/${c + 2}/2/span 4">${MONTHS_S[lastM]}</span>`;
+    }
+    for (let r = 0; r < 5; r++) {
+      const d = new Date(mon); d.setDate(mon.getDate() + r);
+      const area = `grid-area:${r + 2}/${c + 2}`;
+      if (d.getFullYear() !== y) { h += `<span style="${area}"></span>`; continue; }
+      const k = iso(d), s = S[k];
+      if (k > todayKey && !(s && s.n)) { h += `<i class="hc fut" style="${area}"></i>`; continue; }
+      let cls = '';
+      if (s && s.n) {
+        if (s.pnl === 0) cls = 'be';
+        else cls = (s.pnl > 0 ? 'g' : 'r') + Math.min(4, Math.max(1, Math.ceil(Math.abs(s.pnl) / max * 4)));
+      }
+      if (k === todayKey) cls += ' tod';
+      const tip = `${d.getDate()} ${MONTHS_S[d.getMonth()]}` + (s && s.n ? ` · ${money(s.pnl)} · ${plural(s.n, 'trade')}` : '');
+      h += `<button class="hc ${cls}" style="${area}" data-day="${k}" title="${tip}" aria-label="${tip}"></button>`;
+    }
+  }
+  heat.innerHTML = h;
+  // On narrow screens the year scrolls; keep the recent weeks in view
+  const sc = heat.parentElement, tod = heat.querySelector('.tod');
+  sc.scrollLeft = tod ? tod.offsetLeft - sc.clientWidth + 60 : (y < now.getFullYear() ? sc.scrollWidth : 0);
+
+  let total = 0, days = 0;
+  for (const k in S) if (k.startsWith(y + '-') && S[k].n) { total += S[k].pnl; days++; }
+  $('#heat-title').innerHTML = `${y} · <span class="mono ${tone(total)}">${money(total)}</span> · ${plural(days, 'día')} operado${days === 1 ? '' : 's'}`;
+}
+
+/* ---------- month calendar ---------- */
+function renderMonth(S) {
+  const { y, m } = view;
+  $('#month-title').textContent = `${MONTHS[m]} ${y}`;
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  const cells = Array(first).fill(null);
+  for (let d = 1; d <= days; d++) cells.push(d);
+  while (cells.length % 7) cells.push(null);
+
+  let h = DOW.map(d => `<div class="dow">${d}</div>`).join('') + '<div class="dow wk">Semana</div>';
+  let mp = 0, mn = 0;
+  for (let i = 0; i < cells.length; i += 7) {
+    let wp = 0, wn = 0;
+    for (const d of cells.slice(i, i + 7)) {
+      if (d === null) { h += '<div class="day blank"></div>'; continue; }
+      const k = `${y}-${pad(m + 1)}-${pad(d)}`, s = S[k];
+      let cls = 'day', inner = '';
+      if (s && s.n) {
+        cls += s.pnl > 0 ? ' up' : s.pnl < 0 ? ' dn' : '';
+        inner = `<span class="p mono ${tone(s.pnl)}">${compact(s.pnl)}</span><span class="c">${plural(s.n, 'trade')}</span>`;
+        wp += s.pnl; wn += s.n;
+      }
+      if (k === todayKey) cls += ' today';
+      h += `<button class="${cls}" data-day="${k}"><span class="n">${d}</span>${inner}</button>`;
+    }
+    mp += wp; mn += wn;
+    h += `<div class="week"><span class="p mono ${wn ? tone(wp) : 'zero'}">${wn ? compact(wp) : '—'}</span>${wn ? `<span class="c">${plural(wn, 'trade')}</span>` : ''}</div>`;
+  }
+  $('#cal').innerHTML = h;
+  const total = $('#month-total');
+  total.textContent = mn ? money(round2(mp)) : '$0.00';
+  total.className = 'total mono ' + tone(mp);
+}
+
+/* ---------- accounts page ---------- */
+function accountForm(a) {
+  return `<form class="form" id="acc-form" style="margin-bottom:20px">
+    <div class="row3">
+      <label class="field"><span>Nombre</span><input class="inp" name="name" value="${esc(a?.name)}" placeholder="MFFU 50K #1" required autocomplete="off"></label>
+      <label class="field"><span>Empresa / broker</span><input class="inp" name="firm" value="${esc(a?.firm)}" placeholder="Opcional" autocomplete="off"></label>
+      <label class="field"><span>Balance inicial</span><input class="inp mono" name="start" inputmode="decimal" value="${a ? a.start : ''}" placeholder="50,000" required></label>
+    </div>
+    <div class="f-actions" style="justify-content:space-between;align-items:center">
+      <label class="check"><input type="checkbox" name="active" ${a?.active === false ? '' : 'checked'}> Activa</label>
+      <div><button type="button" class="btn" data-act="acc-cancel">Cancelar</button><button type="submit" class="btn pri">${a ? 'Guardar' : 'Agregar cuenta'}</button></div>
+    </div>
+  </form>`;
+}
+
+function renderAccounts() {
+  const list = db.accounts.map(a => ({ a, ...accountTotals(a) }))
+    .sort((x, y) => (y.a.active !== false) - (x.a.active !== false) || x.a.name.localeCompare(y.a.name, 'es', { numeric: true }));
+  const active = list.filter(x => x.a.active !== false);
+  const bal = active.reduce((s, x) => s + x.balance, 0);
+  const pnl = active.reduce((s, x) => s + x.pnl, 0);
+  const wd = list.reduce((s, x) => s + x.wd, 0);
+
+  $('#accounts').innerHTML = `
+    <div class="card-head">
+      <div><div class="title">Cuentas</div><div class="sub">El balance se calcula con el balance inicial, los trades y los retiros.</div></div>
+      ${accForm === 'new' ? '' : '<button class="btn pri" data-act="acc-new">+ Nueva cuenta</button>'}
+    </div>
+    <div class="kpis">
+      <div>Balance total<b class="mono">${usd.format(bal)}</b></div>
+      <div>P&amp;L acumulado<b class="mono ${tone(pnl)}">${money(round2(pnl))}</b></div>
+      <div>Cuentas activas<b class="mono">${active.length}</b></div>
+      <div>Retirado<b class="mono">${usd.format(wd)}</b></div>
+    </div>
+    ${accForm === 'new' ? accountForm() : ''}
+    ${list.length ? `<div class="tbl acc-t">
+      <div class="tr hd"><span>Cuenta</span><span class="r c-start">Inicial</span><span class="r c-pnl">P&amp;L</span><span class="r c-wd">Retiros</span><span class="r">Balance</span><span></span></div>
+      ${list.map(({ a, pnl, wd, balance }) => accForm === a.id ? `<div style="padding-top:12px;border-top:1px solid var(--line)">${accountForm(a)}</div>` : `
+      <div class="tr ${a.active === false ? 'off' : ''}">
+        <span class="nm">${esc(a.name)}<small>${esc(a.firm || '')}${a.active === false ? (a.firm ? ' · ' : '') + 'Archivada' : ''}</small></span>
+        <span class="r mono c-start">${usd.format(a.start || 0)}</span>
+        <span class="r mono c-pnl ${tone(pnl)}">${money(round2(pnl))}</span>
+        <span class="r mono c-wd">${wd ? usd.format(wd) : '—'}</span>
+        <span class="r mono">${usd.format(balance)}</span>
+        <span class="acts"><button data-act="acc-edit" data-id="${a.id}">Editar</button><button data-act="acc-toggle" data-id="${a.id}">${a.active === false ? 'Activar' : 'Archivar'}</button><button class="del" data-act="acc-del" data-id="${a.id}">Eliminar</button></span>
+      </div>`).join('')}
+    </div>` : accForm ? '' : '<div class="empty">Aún no tienes cuentas. Agrégalas para asignar cada trade a su cuenta y ver el balance de cada una.</div>'}`;
+}
+
+/* ---------- withdrawals page ---------- */
+function renderWithdrawals() {
+  const list = [...db.withdrawals].sort((a, b) => b.date.localeCompare(a.date));
+  const total = list.reduce((s, w) => s + w.amount, 0);
+  const y = String(now.getFullYear());
+  const year = list.filter(w => w.date.startsWith(y)).reduce((s, w) => s + w.amount, 0);
+  const month = list.filter(w => w.date.startsWith(todayKey.slice(0, 7))).reduce((s, w) => s + w.amount, 0);
+  const accs = db.accounts.filter(a => a.active !== false);
+
+  $('#withdrawals').innerHTML = `
+    <div class="card-head"><div><div class="title">Retiros</div><div class="sub">Lo que sacaste de tus cuentas.</div></div></div>
+    <div class="kpis">
+      <div>Total retirado<b class="mono">${usd.format(total)}</b></div>
+      <div>Este año<b class="mono">${usd.format(year)}</b></div>
+      <div>Este mes<b class="mono">${usd.format(month)}</b></div>
+      <div>Retiros<b class="mono">${list.length}</b></div>
+    </div>
+    <form class="wd-form" id="wd-form">
+      <label class="field"><span>Fecha</span><input class="inp" type="date" name="date" value="${todayKey}" required></label>
+      <label class="field"><span>Cuenta</span><select class="inp" name="account"><option value="">Sin cuenta</option>${accs.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></label>
+      <label class="field"><span>Monto</span><input class="inp mono" name="amount" inputmode="decimal" placeholder="0.00" required></label>
+      <label class="field wide"><span>Nota</span><input class="inp" name="note" placeholder="Opcional" autocomplete="off"></label>
+      <button class="btn pri wide" type="submit">Agregar</button>
+    </form>
+    ${list.length ? `<div class="tbl wd-t">
+      <div class="tr hd"><span>Fecha</span><span>Cuenta</span><span>Nota</span><span class="r">Monto</span><span></span></div>
+      ${list.map(w => `<div class="tr">
+        <span class="mono" style="color:var(--muted)">${shortDate(w.date)}</span>
+        <span class="nm">${w.accountId ? esc(accName(w.accountId)) : '<span style="color:var(--muted);font-weight:400">Sin cuenta</span>'}</span>
+        <span class="c-note" style="color:var(--soft)">${esc(w.note)}</span>
+        <span class="r mono" style="color:var(--gold)">${usd.format(w.amount)}</span>
+        <span class="acts"><button class="del" data-act="wd-del" data-id="${w.id}">Eliminar</button></span>
+      </div>`).join('')}
+    </div>` : '<div class="empty">Sin retiros registrados.</div>'}`;
+}
+
+/* ---------- day drawer ---------- */
+function accountField(t) {
+  const list = db.accounts.filter(a => a.active !== false || a.id === t?.accountId);
+  if (!list.length) return `<div class="field"><span>Cuenta</span><span class="hint" style="padding-top:10px">Agrega tus cuentas en <a href="#/cuentas">Cuentas</a>.</span></div>`;
+  const sel = t ? t.accountId : (list.some(a => a.id === prefs.lastAcc) ? prefs.lastAcc : list[0].id);
+  return `<label class="field"><span>Cuenta</span><select class="inp" name="account">
+    ${list.map(a => `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}
+    ${t && !t.accountId ? '<option value="" selected>Sin cuenta</option>' : ''}
+  </select></label>`;
+}
+
+function tradeForm(t) {
+  const win = !t || t.pnl >= 0;
+  return `<form class="form" id="trade-form">
+    <div class="row">
+      <label class="field"><span>Fecha</span><input class="inp" type="date" name="date" value="${t ? t.date : openDay}" required></label>
+      ${accountField(t)}
+    </div>
+    <div class="row">
+      <label class="field"><span>Símbolo</span><input class="inp" name="symbol" value="${esc(t?.symbol)}" placeholder="NQ, ES, EURUSD…" autocomplete="off" required></label>
+      <div class="field"><span>Dirección</span>
+        <div class="seg">
+          <input type="radio" name="side" id="s-l" value="Long" ${t?.side !== 'Short' ? 'checked' : ''}><label for="s-l">Long</label>
+          <input type="radio" name="side" id="s-s" value="Short" ${t?.side === 'Short' ? 'checked' : ''}><label for="s-s">Short</label>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><span>Resultado</span>
+        <div class="seg">
+          <input type="radio" name="out" id="o-w" value="1" ${win ? 'checked' : ''}><label for="o-w" class="lg">Ganancia</label>
+          <input type="radio" name="out" id="o-l" value="-1" ${!win ? 'checked' : ''}><label for="o-l" class="ls">Pérdida</label>
+        </div>
+      </div>
+      <label class="field"><span>Monto (USD)</span><input class="inp mono" name="amount" inputmode="decimal" value="${t ? Math.abs(t.pnl) : ''}" placeholder="0.00" required></label>
+    </div>
+    <label class="field"><span>Imagen</span><input class="inp" name="image" value="${esc(t?.image)}" placeholder="https://www.tradingview.com/x/…" autocomplete="off">
+      <span class="hint">Pega el link del snapshot de TradingView o cualquier URL de imagen.</span></label>
+    <label class="field"><span>Nota</span><textarea class="inp" name="note" placeholder="Setup, ejecución, qué aprendiste…">${esc(t?.note)}</textarea></label>
+    <div class="f-actions">
+      <button type="button" class="btn" data-act="cancel">Cancelar</button>
+      <button type="submit" class="btn pri">${t ? 'Guardar cambios' : 'Agregar trade'}</button>
+    </div>
+  </form>`;
+}
+
+function tradeCard(t) {
+  if (t.id === editId) return tradeForm(t);
+  const img = t.image ? `<img class="shot" src="${esc(imageUrl(t.image))}" data-src="${esc(t.image)}" alt="Gráfico ${esc(t.symbol)}" loading="lazy">` : '';
+  return `<article class="trade">
+    <div class="t-head"><span class="sym">${esc(t.symbol)}</span><span class="tag">${esc(t.side)}</span>${t.accountId ? `<span class="t-acc">${esc(accName(t.accountId))}</span>` : ''}<span class="mono ${tone(t.pnl)}">${money(t.pnl)}</span></div>
+    ${img}
+    ${t.note ? `<div class="t-note">${esc(t.note)}</div>` : ''}
+    <div class="t-tools"><button data-act="edit" data-id="${t.id}">Editar</button><button class="del" data-act="del" data-id="${t.id}">Eliminar</button></div>
+  </article>`;
+}
+
+function renderDrawer() {
+  const k = openDay, d = parse(k);
+  const trades = db.trades.filter(t => t.date === k).sort((a, b) => a.created - b.created);
+  const pnl = round2(trades.reduce((a, t) => a + t.pnl, 0));
+  const title = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  $('#drawer').innerHTML = `
+    <div class="d-head">
+      <div>
+        <div class="d-date">${title}</div>
+        <div class="d-sub">${trades.length ? `<span class="mono ${tone(pnl)}">${money(pnl)}</span> · ${plural(trades.length, 'trade')} <button data-act="day-summary">Ver resumen</button>` : 'Sin trades'}</div>
+      </div>
+      <button class="icon" data-act="close" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="d-body">
+      <section>
+        <div class="sec-t">Trades</div>
+        ${trades.map(tradeCard).join('')}
+        <div style="margin-top:${trades.length ? 10 : 0}px">${formOpen && !editId ? tradeForm() : `<button class="add" data-act="add">+ Agregar trade</button>`}</div>
+      </section>
+      <section>
+        <div class="sec-t">Notas del día</div>
+        <textarea class="inp" id="day-note" rows="4" placeholder="Contexto del mercado, estado mental, plan…">${esc(db.notes[k])}</textarea>
+      </section>
+    </div>`;
+
+  // Show the original link if the image can't be loaded
+  $('#drawer').querySelectorAll('img.shot').forEach(img => img.addEventListener('error', () => {
+    const a = document.createElement('a');
+    a.className = 'shot-fail'; a.href = img.dataset.src; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = 'No se pudo mostrar la imagen · abrir enlace ↗';
+    img.replaceWith(a);
+  }, { once: true }));
+}
+
+/* ---------- render / routing ---------- */
+const PAGE_NAME = { home: 'Inicio', cuentas: 'Cuentas', retiros: 'Retiros' };
+function renderPage() {
+  renderProfile();
+  if (page === 'home') {
+    const S = dayMap();
+    renderDash(); renderHeat(S); renderMonth(S);
+  } else if (page === 'cuentas') renderAccounts();
+  else renderWithdrawals();
+}
+function render() {
+  renderPage();
+  if (openDay) renderDrawer();
+}
+function route() {
+  const r = location.hash.replace(/^#\/?/, '');
+  page = r === 'cuentas' || r === 'retiros' ? r : 'home';
+  for (const p of ['home', 'cuentas', 'retiros']) $('#page-' + p).hidden = p !== page;
+  document.querySelectorAll('.side-nav a').forEach(a => a.classList.toggle('on', a.dataset.page === page));
+  $('#page-name').textContent = PAGE_NAME[page];
+  document.body.classList.remove('menu-open');
+  closeDrawer();
+  render();
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', route);
+
+function openDrawer(k, withForm) {
+  openDay = k; editId = null;
+  formOpen = withForm || !db.trades.some(t => t.date === k);
+  renderDrawer();
+  document.body.classList.add('drawer-open');
+  $('#drawer').scrollTop = 0;
+  if (withForm) { const f = $('#trade-form'); f.scrollIntoView({ block: 'start' }); f.symbol.focus(); }
+}
+function closeDrawer() {
+  openDay = null; editId = null; formOpen = false;
+  document.body.classList.remove('drawer-open');
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click', e => {
+  if (pick && !e.target.closest('.pp')) togglePicker(false);
+  const preset = e.target.closest('[data-preset]');
+  if (preset) { setPeriod(preset.dataset.preset); togglePicker(false); renderDash(); return; }
+  const pd = e.target.closest('[data-pick]');
+  if (pd) {
+    const k = pd.dataset.pick;
+    if (!pick.s || pick.e) { pick.s = k; pick.e = null; }
+    else if (k < pick.s) { pick.e = pick.s; pick.s = k; }
+    else pick.e = k;
+    renderPicker(); return;
+  }
+  const dayEl = e.target.closest('[data-day]');
+  if (dayEl) { openDrawer(dayEl.dataset.day); return; }
+  const shot = e.target.closest('img.shot');
+  if (shot) { $('#lightbox img').src = shot.src; $('#lightbox').classList.add('on'); return; }
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  // clicks inside the profile dialog shouldn't close it via the backdrop
+  if (el.id === 'profile-modal' && e.target !== el) return;
+  const id = el.dataset.id;
+  switch (el.dataset.act) {
+    case 'menu': document.body.classList.add('menu-open'); break;
+    case 'menu-close': document.body.classList.remove('menu-open'); break;
+    case 'prev': view.m--; if (view.m < 0) { view.m = 11; view.y--; } render(); break;
+    case 'next': view.m++; if (view.m > 11) { view.m = 0; view.y++; } render(); break;
+    case 'today': view.y = now.getFullYear(); view.m = now.getMonth(); render(); break;
+    case 'pp-toggle': togglePicker(); break;
+    case 'pp-prev': pick.m--; if (pick.m < 0) { pick.m = 11; pick.y--; } renderPicker(); break;
+    case 'pp-next': pick.m++; if (pick.m > 11) { pick.m = 0; pick.y++; } renderPicker(); break;
+    case 'pp-apply': setCustom(pick.s, pick.e || pick.s); togglePicker(false); renderDash(); break;
+    case 'download': downloadCard(); break;
+    case 'new-trade': openDrawer(todayKey, true); break;
+    case 'close': closeDrawer(); break;
+    case 'day-summary': setCustom(openDay, openDay); closeDrawer(); renderDash(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'add': formOpen = true; editId = null; renderDrawer(); $('#trade-form [name=symbol]').focus(); break;
+    case 'cancel': formOpen = false; editId = null; renderDrawer(); break;
+    case 'edit': editId = id; formOpen = false; renderDrawer(); break;
+    case 'del':
+      if (confirm('¿Eliminar este trade?')) { db.trades = db.trades.filter(t => t.id !== id); drop('trades', id); render(); }
+      break;
+    case 'acc-new': accForm = 'new'; renderAccounts(); $('#acc-form [name=name]').focus(); break;
+    case 'acc-edit': accForm = id; renderAccounts(); break;
+    case 'acc-cancel': accForm = null; renderAccounts(); break;
+    case 'acc-toggle': { const a = db.accounts.find(x => x.id === id); a.active = a.active === false; put('accounts', a); renderAccounts(); break; }
+    case 'acc-del': {
+      const used = db.trades.some(t => t.accountId === id) || db.withdrawals.some(w => w.accountId === id);
+      if (used) { toast('Tiene trades o retiros. Archívala en su lugar.'); break; }
+      if (confirm('¿Eliminar esta cuenta?')) { db.accounts = db.accounts.filter(a => a.id !== id); drop('accounts', id); renderAccounts(); }
+      break;
+    }
+    case 'wd-del':
+      if (confirm('¿Eliminar este retiro?')) { db.withdrawals = db.withdrawals.filter(w => w.id !== id); drop('withdrawals', id); render(); }
+      break;
+    case 'login': login(); break;
+    case 'logout': signOut(auth); break;
+    case 'profile': openProfile(); break;
+    case 'pf-close': $('#profile-modal').classList.remove('on'); break;
+    case 'pf-pick': $('#pf-file').click(); break;
+    case 'pf-remove': pfPhoto = ''; paintAvatar($('#pf-avatar'), '', $('#pf-form').name.value); break;
+    case 'export': exportData(); break;
+    case 'import': $('#file').click(); break;
+    case 'lb-close': $('#lightbox').classList.remove('on'); break;
+  }
+});
+
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  const form = e.target, f = new FormData(form);
+
+  if (form.id === 'trade-form') {
+    const v = num(f.get('amount'));
+    if (isNaN(v)) { toast('Monto no válido'); return; }
+    const date = f.get('date') || openDay;
+    const accountId = f.get('account') || null;
+    const data = {
+      date, accountId,
+      symbol: f.get('symbol').trim().toUpperCase(),
+      side: f.get('side'),
+      pnl: round2(Math.abs(v) * Number(f.get('out'))),
+      image: f.get('image').trim(),
+      note: f.get('note').trim(),
+    };
+    let trade = editId && db.trades.find(t => t.id === editId);
+    if (trade) Object.assign(trade, data);
+    else db.trades.push(trade = { id: newId(), created: Date.now(), ...data });
+    put('trades', trade);
+    if (accountId) { prefs.lastAcc = accountId; savePrefs(); }
+    editId = null; formOpen = false;
+    if (date !== openDay) { openDay = date; toast(`Guardado en ${shortDate(date)}`); }
+    render();
+
+  } else if (form.id === 'acc-form') {
+    const start = num(f.get('start'));
+    if (isNaN(start)) { toast('Balance no válido'); return; }
+    const data = { name: f.get('name').trim(), firm: f.get('firm').trim(), start: round2(start), active: f.get('active') === 'on' };
+    let acc = accForm !== 'new' && db.accounts.find(a => a.id === accForm);
+    if (acc) Object.assign(acc, data);
+    else db.accounts.push(acc = { id: newId(), ...data });
+    put('accounts', acc);
+    accForm = null;
+    renderAccounts();
+
+  } else if (form.id === 'wd-form') {
+    const amount = num(f.get('amount'));
+    if (isNaN(amount) || amount <= 0) { toast('Monto no válido'); return; }
+    const w = { id: newId(), date: f.get('date') || todayKey, accountId: f.get('account') || null, amount: round2(amount), note: f.get('note').trim() };
+    db.withdrawals.push(w);
+    put('withdrawals', w);
+    renderWithdrawals(); toast('Retiro agregado');
+
+  } else if (form.id === 'pf-form') {
+    db.profile = { name: f.get('name').trim(), photo: pfPhoto || '' };
+    saveProfile(); render();
+    $('#profile-modal').classList.remove('on');
+  }
+});
+
+$('#pf-file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try { pfPhoto = await resizeImage(file); paintAvatar($('#pf-avatar'), pfPhoto); }
+  catch (err) { toast('No se pudo leer la imagen'); }
+});
+
+let noteTimer;
+document.addEventListener('input', e => {
+  if (e.target.id !== 'day-note') return;
+  const v = e.target.value;
+  const k = openDay;
+  if (v.trim()) db.notes[k] = v; else delete db.notes[k];
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => saveNote(k), 600);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('#lightbox').classList.contains('on')) $('#lightbox').classList.remove('on');
+  else if ($('#profile-modal').classList.contains('on')) $('#profile-modal').classList.remove('on');
+  else if (pick) togglePicker(false);
+  else if (openDay) closeDrawer();
+  else document.body.classList.remove('menu-open');
+});
+
+/* ---------- summary image ---------- */
+function loadScript(src) {
+  return new Promise((ok, fail) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
+}
+async function downloadCard() {
+  try {
+    if (!window.htmlToImage) await loadScript('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js');
+    const url = await htmlToImage.toPng($('#share'), { pixelRatio: 2, backgroundColor: '#0f0f11' });
+    const a = document.createElement('a');
+    a.href = url; a.download = `resumen-${dash.s === dash.e ? dash.s : dash.s + '_' + dash.e}.png`; a.click();
+  } catch (err) { toast('No se pudo generar la imagen'); }
+}
+
+/* ---------- backup ---------- */
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `journal-${todayKey}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$('#file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const d = JSON.parse(await file.text());
+    if (!Array.isArray(d.trades)) throw 0;
+    if (!confirm(`Importar ${plural(d.trades.length, 'trade')}? Esto reemplaza los datos actuales.`)) return;
+    await importAll(normalize(d));
+    toast('Datos importados');
+  } catch (err) { console.error(err); toast(err && err.code ? 'No se pudo importar (' + err.code + ')' : 'Archivo no válido'); }
+});
+
+// Replaces everything in Firestore with the imported copy (batches cap at 500 writes)
+async function importAll(n) {
+  const ops = [];
+  for (const t of db.trades) ops.push(b => b.delete(ref('trades', t.id)));
+  for (const a of db.accounts) ops.push(b => b.delete(ref('accounts', a.id)));
+  for (const w of db.withdrawals) ops.push(b => b.delete(ref('withdrawals', w.id)));
+  for (const k in db.notes) ops.push(b => b.delete(ref('notes', k)));
+  for (const t of n.trades) ops.push(b => b.set(ref('trades', t.id), t));
+  for (const a of n.accounts) ops.push(b => b.set(ref('accounts', a.id), a));
+  for (const w of n.withdrawals) ops.push(b => b.set(ref('withdrawals', w.id), w));
+  for (const k in n.notes) ops.push(b => b.set(ref('notes', k), { text: n.notes[k] }));
+  ops.push(b => b.set(userRef(), { profile: n.profile }, { merge: true }));
+  for (let i = 0; i < ops.length; i += 450) {
+    const b = writeBatch(fs);
+    ops.slice(i, i + 450).forEach(op => op(b));
+    await b.commit();
+  }
+  db = n;
+  render();
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('on'), 2400);
+}
+
+/* ---------- auth ---------- */
+let deniedMsg = '';
+function showGate(msg) {
+  $('#gate-msg').textContent = msg;
+  document.body.classList.add('locked');
+  document.body.classList.remove('loading', 'menu-open');
+}
+async function login() {
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (err) {
+    if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') showGate('No se pudo iniciar sesión (' + err.code + ').');
+  }
+}
+
+setPeriod(PRESETS.some(([p]) => p === prefs.p) ? prefs.p : 'week');
+
+if (!configured) {
+  showGate('Falta configurar Firebase en firebase-config.js.');
+  document.body.classList.add('loading');
+} else {
+  onAuthStateChanged(auth, user => {
+    unsubs.forEach(u => u()); unsubs = [];
+    closeDrawer();
+    if (!user) {
+      uid = null; db = normalize({});
+      showGate(deniedMsg || 'Entra con tu cuenta de Google.');
+      deniedMsg = '';
+      return;
+    }
+    // Quick client-side check; the real lock is in firestore.rules
+    if (ALLOWED_EMAIL && user.email.toLowerCase() !== ALLOWED_EMAIL.toLowerCase()) {
+      deniedMsg = `${user.email} no tiene acceso a este journal.`;
+      signOut(auth);
+      return;
+    }
+    uid = user.uid;
+    $('#who').textContent = user.email;
+    document.body.classList.remove('locked', 'loading');
+    listen();
+    route();
+  });
+}
+</script>
+</body>
+</html>
