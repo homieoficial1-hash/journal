@@ -328,6 +328,26 @@ body.locked .side-handle,body.drawer-open .side-handle{display:none}
 .dot{width:7px;height:7px;border-radius:50%;background:rgb(var(--c))}
 .row4{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px}
 
+/* accounts by company */
+.acc-tools{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:-4px 0 22px}
+.acc-tools .fpills{margin:0}
+.firm-sel{width:auto;min-width:190px;padding-top:7px;padding-bottom:7px;font-size:13px;border-radius:999px}
+.grp{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:20px 0 8px;border-top:1px solid var(--line)}
+.grp b{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.grp>span{font-size:12px;color:var(--muted);white-space:nowrap}
+.grp + .tr{border-top:0}
+.acc-t .tr{padding-left:12px}
+.acc-t .tr.hd{padding-left:0}
+
+/* account picked in the trade form */
+.acc-info{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:var(--raise);border:1px solid var(--line)}
+.acc-info .ai-firm{font-size:13px;font-weight:500}
+.ai-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.acc-info .st{margin-left:0}
+.acc-info small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.ai-bal{text-align:right;flex:none}
+.ai-bal b{display:block;font-size:17px;font-weight:600;letter-spacing:-.01em}
+
 /* certificates */
 .file-field{cursor:pointer}
 .file-name{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -951,12 +971,28 @@ const statusTag = s => isFunded() && STATUS[s] ? `<span class="st ${s}">${STATUS
 // Burned accounts no longer trade: keep them out of the trade picker and the live balance
 const usable = a => a.active !== false && !(isFunded() && a.status === 'burned');
 
+// Accounts are grouped by company (fondeo) or broker (capital propio)
+const noFirm = () => isFunded() ? 'Sin empresa' : 'Sin broker';
+const firmOf = a => (a.firm || '').trim() || noFirm();
+const byName = (x, y) => x.name.localeCompare(y.name, 'es', { numeric: true });
+function byFirm(items, get = x => x) {
+  const m = new Map();
+  for (const it of items) { const f = firmOf(get(it)); if (!m.has(f)) m.set(f, []); m.get(f).push(it); }
+  return [...m].sort(([a], [b]) => (a === noFirm()) - (b === noFirm()) || a.localeCompare(b, 'es'));
+}
+function accountOptions(list, sel, withBalance) {
+  return byFirm(list).map(([firm, accs]) => `<optgroup label="${esc(firm)}">${accs.sort(byName).map(a =>
+    `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}${withBalance ? ' — ' + usd.format(accountTotals(a).balance) : ''}</option>`).join('')}</optgroup>`).join('');
+}
+
 function accountForm(a) {
   const st = a ? a.status || '' : 'challenge';
+  const firms = [...new Set(db.accounts.map(x => (x.firm || '').trim()).filter(Boolean))].sort((x, y) => x.localeCompare(y, 'es'));
   return `<form class="form" id="acc-form" style="margin-bottom:20px">
     <div class="${isFunded() ? 'row4' : 'row3'}">
       <label class="field"><span>Nombre</span><input class="inp" name="name" value="${esc(a?.name)}" placeholder="${isFunded() ? 'MFFU 50K #1' : 'Cuenta personal'}" required autocomplete="off"></label>
-      <label class="field"><span>${isFunded() ? 'Empresa' : 'Broker'}</span><input class="inp" name="firm" value="${esc(a?.firm)}" placeholder="Opcional" autocomplete="off"></label>
+      <label class="field"><span>${isFunded() ? 'Empresa' : 'Broker'}</span><input class="inp" name="firm" list="firm-list" value="${esc(a?.firm)}" placeholder="${isFunded() ? 'My Funded Futures' : 'Interactive Brokers'}" autocomplete="off">
+        <datalist id="firm-list">${firms.map(f => `<option value="${esc(f)}">`).join('')}</datalist></label>
       <label class="field"><span>Balance inicial</span><input class="inp mono" name="start" inputmode="decimal" value="${a ? a.start : ''}" placeholder="${isFunded() ? '50,000' : '5,000'}" required></label>
       ${isFunded() ? `<label class="field"><span>Estado</span><select class="inp" name="status">
         ${Object.entries(STATUS).map(([k, l]) => `<option value="${k}" ${st === k ? 'selected' : ''}>${l}</option>`).join('')}
@@ -972,22 +1008,44 @@ function accountForm(a) {
 
 function renderAccounts() {
   const all = db.accounts.map(a => ({ a, ...accountTotals(a) }))
-    .sort((x, y) => usable(y.a) - usable(x.a) || x.a.name.localeCompare(y.a.name, 'es', { numeric: true }));
+    .sort((x, y) => usable(y.a) - usable(x.a) || byName(x.a, y.a));
+  const firms = byFirm(all, x => x.a).map(([f]) => f);
+  const firmFilter = firms.includes(prefs.firmFilter) ? prefs.firmFilter : 'all';
+  const inFirm = firmFilter === 'all' ? all : all.filter(x => firmOf(x.a) === firmFilter);
   const filter = isFunded() && STATUS[prefs.accFilter] ? prefs.accFilter : 'all';
-  const list = filter === 'all' ? all : all.filter(x => x.a.status === filter);
+  const list = filter === 'all' ? inFirm : inFirm.filter(x => x.a.status === filter);
   const live = list.filter(x => usable(x.a));
   const bal = live.reduce((s, x) => s + x.balance, 0);
   const pnl = list.reduce((s, x) => s + x.pnl, 0);
   const wd = list.reduce((s, x) => s + x.wd, 0);
-  const count = k => all.filter(x => k === 'all' || x.a.status === k).length;
+  const count = k => inFirm.filter(x => k === 'all' || x.a.status === k).length;
+  const row = ({ a, pnl, wd, balance }) => accForm === a.id ? `<div style="padding:12px 0 0">${accountForm(a)}</div>` : `
+      <div class="tr ${usable(a) ? '' : 'off'}">
+        <span class="nm"><span class="nm-line">${esc(a.name)}${statusTag(a.status)}</span>${a.active === false ? '<small>Archivada</small>' : ''}</span>
+        <span class="r mono c-start">${usd.format(a.start || 0)}</span>
+        <span class="r mono c-pnl ${tone(pnl)}">${money(round2(pnl))}</span>
+        <span class="r mono c-wd">${wd ? usd.format(wd) : '—'}</span>
+        <span class="r mono">${usd.format(balance)}</span>
+        <span class="acts"><button data-act="acc-edit" data-id="${a.id}">Editar</button><button data-act="acc-toggle" data-id="${a.id}">${a.active === false ? 'Activar' : 'Archivar'}</button><button class="del" data-act="acc-del" data-id="${a.id}">Eliminar</button></span>
+      </div>`;
+  const group = ([firm, items]) => {
+    const g = items.filter(x => usable(x.a)).reduce((s, x) => s + x.balance, 0);
+    return `<div class="grp"><b>${esc(firm)}</b><span>${plural(items.length, 'cuenta')}${items.some(x => usable(x.a)) ? ` · <span class="mono">${usd.format(g)}</span>` : ''}</span></div>${items.map(row).join('')}`;
+  };
 
   $('#accounts').innerHTML = `
     <div class="card-head">
       <div><div class="title">Cuentas</div><div class="sub">El balance se calcula con el balance inicial, los trades y los retiros.</div></div>
       ${accForm === 'new' ? '' : '<button class="btn pri" data-act="acc-new">+ Nueva cuenta</button>'}
     </div>
-    ${isFunded() && all.length ? `<div class="fpills">${Object.entries(STATUS_PLURAL).map(([k, l]) =>
-      `<button class="${filter === k ? 'on' : ''}" data-acc-filter="${k}">${k !== 'all' ? `<i class="dot ${k}"></i>` : ''}${l}<span>${count(k)}</span></button>`).join('')}</div>` : ''}
+    ${all.length && (isFunded() || firms.length > 1) ? `<div class="acc-tools">
+      ${isFunded() ? `<div class="fpills">${Object.entries(STATUS_PLURAL).map(([k, l]) =>
+        `<button class="${filter === k ? 'on' : ''}" data-acc-filter="${k}">${k !== 'all' ? `<i class="dot ${k}"></i>` : ''}${l}<span>${count(k)}</span></button>`).join('')}</div>` : '<div></div>'}
+      ${firms.length > 1 ? `<select class="inp firm-sel" id="firm-filter" aria-label="Filtrar por ${isFunded() ? 'empresa' : 'broker'}">
+        <option value="all">${isFunded() ? 'Todas las empresas' : 'Todos los brokers'}</option>
+        ${firms.map(f => `<option value="${esc(f)}" ${f === firmFilter ? 'selected' : ''}>${esc(f)}</option>`).join('')}
+      </select>` : ''}
+    </div>` : ''}
     <div class="kpis">
       <div>Balance${filter === 'burned' ? '' : ' total'}<b class="mono">${live.length ? usd.format(bal) : '—'}</b></div>
       <div>P&amp;L acumulado<b class="mono ${tone(pnl)}">${money(round2(pnl))}</b></div>
@@ -997,16 +1055,8 @@ function renderAccounts() {
     ${accForm === 'new' ? accountForm() : ''}
     ${list.length ? `<div class="tbl acc-t">
       <div class="tr hd"><span>Cuenta</span><span class="r c-start">Inicial</span><span class="r c-pnl">P&amp;L</span><span class="r c-wd">Retiros</span><span class="r">Balance</span><span></span></div>
-      ${list.map(({ a, pnl, wd, balance }) => accForm === a.id ? `<div style="padding-top:12px;border-top:1px solid var(--line)">${accountForm(a)}</div>` : `
-      <div class="tr ${usable(a) ? '' : 'off'}">
-        <span class="nm"><span class="nm-line">${esc(a.name)}${statusTag(a.status)}</span><small>${esc(a.firm || '')}${a.active === false ? (a.firm ? ' · ' : '') + 'Archivada' : ''}</small></span>
-        <span class="r mono c-start">${usd.format(a.start || 0)}</span>
-        <span class="r mono c-pnl ${tone(pnl)}">${money(round2(pnl))}</span>
-        <span class="r mono c-wd">${wd ? usd.format(wd) : '—'}</span>
-        <span class="r mono">${usd.format(balance)}</span>
-        <span class="acts"><button data-act="acc-edit" data-id="${a.id}">Editar</button><button data-act="acc-toggle" data-id="${a.id}">${a.active === false ? 'Activar' : 'Archivar'}</button><button class="del" data-act="acc-del" data-id="${a.id}">Eliminar</button></span>
-      </div>`).join('')}
-    </div>` : accForm ? '' : all.length ? `<div class="empty">No tienes cuentas con este estado.</div>` : '<div class="empty">Aún no tienes cuentas. Agrégalas para asignar cada trade a su cuenta y ver el balance de cada una.</div>'}`;
+      ${byFirm(list, x => x.a).map(group).join('')}
+    </div>` : accForm ? '' : all.length ? `<div class="empty">No tienes cuentas con este filtro.</div>` : '<div class="empty">Aún no tienes cuentas. Agrégalas para asignar cada trade a su cuenta y ver el balance de cada una.</div>'}`;
 }
 
 /* ---------- withdrawals page ---------- */
@@ -1028,7 +1078,7 @@ function renderWithdrawals() {
     </div>
     <form class="wd-form" id="wd-form">
       <label class="field"><span>Fecha</span><input class="inp" type="date" name="date" value="${todayKey}" required></label>
-      <label class="field"><span>Cuenta</span><select class="inp" name="account"><option value="">Sin cuenta</option>${accs.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></label>
+      <label class="field"><span>Cuenta</span><select class="inp" name="account"><option value="">Sin cuenta</option>${accountOptions(accs, null, true)}</select></label>
       <label class="field"><span>Monto</span><input class="inp mono" name="amount" inputmode="decimal" placeholder="0.00" required></label>
       <label class="field wide"><span>Nota</span><input class="inp" name="note" placeholder="Opcional" autocomplete="off"></label>
       <label class="field wide file-field"><span>Certificado</span><span class="inp file-name" id="wd-file-name">Subir imagen (opcional)</span><input type="file" name="receipt" accept="image/*" hidden></label>
@@ -1054,9 +1104,20 @@ function accountField(t) {
   if (!list.length) return `<div class="field"><span>Cuenta</span><span class="hint" style="padding-top:10px">Agrega tus cuentas en <a href="#/cuentas">Cuentas</a>.</span></div>`;
   const sel = t ? t.accountId : (list.some(a => a.id === prefs.lastAcc) ? prefs.lastAcc : list[0].id);
   return `<label class="field"><span>Cuenta</span><select class="inp" name="account">
-    ${list.map(a => `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}
+    ${accountOptions(list, sel, true)}
     ${t && !t.accountId ? '<option value="" selected>Sin cuenta</option>' : ''}
   </select></label>`;
+}
+// Card under the account picker: company, status and current balance of the chosen account
+function paintAccInfo() {
+  const f = $('#trade-form'), box = $('#acc-info');
+  if (!f || !box || !f.account) return;
+  const a = db.accounts.find(x => x.id === f.account.value);
+  box.hidden = !a;
+  if (!a) return;
+  const { balance, pnl } = accountTotals(a);
+  box.innerHTML = `<div style="min-width:0"><span class="ai-top"><span class="ai-firm">${esc(firmOf(a))}</span>${statusTag(a.status)}</span><small>Balance inicial ${usd.format(a.start || 0)} · P&amp;L <span class="${tone(pnl)}">${money(round2(pnl))}</span></small></div>
+    <div class="ai-bal"><small>Balance actual</small><b class="mono">${usd.format(balance)}</b></div>`;
 }
 
 function tradeForm(t) {
@@ -1066,6 +1127,7 @@ function tradeForm(t) {
       <label class="field"><span>Fecha</span><input class="inp" type="date" name="date" value="${t ? t.date : openDay}" required></label>
       ${accountField(t)}
     </div>
+    ${db.accounts.length ? '<div class="acc-info" id="acc-info" hidden></div>' : ''}
     <div class="row">
       <label class="field"><span>Símbolo</span><input class="inp" name="symbol" value="${esc(t?.symbol)}" placeholder="NQ, ES, EURUSD…" autocomplete="off" required></label>
       <div class="field"><span>Dirección</span>
@@ -1131,6 +1193,7 @@ function renderDrawer() {
       </section>
     </div>`;
 
+  paintAccInfo();
   // Show the original link if the image can't be loaded
   $('#drawer').querySelectorAll('img.shot').forEach(img => img.addEventListener('error', () => {
     const a = document.createElement('a');
@@ -1486,6 +1549,8 @@ $('#rc-file').addEventListener('change', e => {
 });
 document.addEventListener('change', e => {
   if (e.target.name === 'receipt') $('#wd-file-name').textContent = e.target.files[0]?.name || 'Subir imagen (opcional)';
+  if (e.target.name === 'account' && e.target.closest('#trade-form')) paintAccInfo();
+  if (e.target.id === 'firm-filter') { prefs.firmFilter = e.target.value; savePrefs(); accForm = null; renderAccounts(); }
 });
 
 let deniedMsg = '';
