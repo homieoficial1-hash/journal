@@ -19,7 +19,7 @@
   --text:#ececed; --soft:#c4c4c7; --muted:#7c7c82; --faint:#4a4a4f;
   --g:62,207,142; --r:240,104,104; --gold:#d9b45a;
   --side:#0c0c0d; --pop:#0f0f10; --head-bg:rgba(12,12,13,.94);
-  --share-bg:#0f0f11; --share-line:#242428; --dots:rgba(255,255,255,.075);
+  --share-bg:#0f0f11; --share-line:#242428; --glow1:.28; --glow2:.12; --glow-line:.22; --dots:rgba(255,255,255,.075);
   --glass:rgba(255,255,255,.028); --glass-line:rgba(255,255,255,.07); --glass-sep:rgba(255,255,255,.055); --chip:rgba(255,255,255,.07);
   --hc:#17171a; --hc-fut:#111113; --hc-be:#2c2c30; --in:rgba(255,255,255,.06);
   --focus:#55555b; --pri-hover:#fff;
@@ -31,7 +31,7 @@
   --text:#111113; --soft:#3b3b41; --muted:#6f6f77; --faint:#a8a8b0;
   --g:18,160,104; --r:222,62,62; --gold:#b07d1c;
   --side:#ffffff; --pop:#ffffff; --head-bg:rgba(255,255,255,.94);
-  --share-bg:#ffffff; --share-line:#e6e6ea; --dots:rgba(0,0,0,.07);
+  --share-bg:#ffffff; --share-line:#e6e6ea; --glow1:.34; --glow2:.16; --glow-line:.35; --dots:rgba(0,0,0,.07);
   --glass:rgba(0,0,0,.018); --glass-line:rgba(0,0,0,.08); --glass-sep:rgba(0,0,0,.06); --chip:rgba(0,0,0,.06);
   --hc:#ededf0; --hc-fut:#f6f6f8; --hc-be:#cfcfd4; --in:rgba(0,0,0,.05);
   --focus:#9a9aa2; --pri-hover:#000;
@@ -111,9 +111,9 @@ body.menu-open .side-scrim{opacity:1;pointer-events:auto}
 .pp-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--muted);gap:8px}
 
 /* summary card */
-.share{--tone:var(--g);position:relative;overflow:hidden;isolation:isolate;border-radius:20px;border:1px solid var(--share-line);padding:24px 28px 22px;background:var(--share-bg)}
+.share{--tone:var(--g);position:relative;overflow:hidden;isolation:isolate;border-radius:20px;border:1px solid rgba(var(--tone),var(--glow-line));padding:24px 28px 22px;background:var(--share-bg)}
 .share.loss{--tone:var(--r)}
-.share::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(80% 110% at 0% 0%,rgba(var(--tone),.17),transparent 62%),radial-gradient(50% 70% at 100% 100%,rgba(var(--tone),.07),transparent 70%)}
+.share::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(90% 120% at 0% 0%,rgba(var(--tone),var(--glow1)),transparent 65%),radial-gradient(60% 80% at 100% 100%,rgba(var(--tone),var(--glow2)),transparent 72%)}
 .share::after{content:"";position:absolute;inset:0;z-index:-1;background-image:radial-gradient(var(--dots) 1px,transparent 1.3px);background-size:12px 12px;-webkit-mask-image:linear-gradient(200deg,transparent 45%,#000 100%);mask-image:linear-gradient(200deg,transparent 45%,#000 100%)}
 /* nowrap keeps the exported PNG identical: html-to-image freezes widths, so any font metric drift would wrap text */
 .s-period,.s-th,.s-label,.s-stats,.s-foot,.s-who{white-space:nowrap}
@@ -195,7 +195,7 @@ button.day.up:hover{background:rgba(var(--g),.09)} button.day.dn:hover{backgroun
 .tr.hd{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;border-top:0;padding-top:0}
 .tr .r{text-align:right}
 .acc-t .tr{grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr)) 150px}
-.wd-t .tr{grid-template-columns:110px minmax(0,1fr) minmax(0,1.4fr) 110px 70px}
+.wd-t .tr{grid-template-columns:110px minmax(0,1fr) minmax(0,1.2fr) 110px auto}
 .nm{font-weight:500}
 .nm small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
 .off{opacity:.45}
@@ -266,7 +266,7 @@ textarea.inp{resize:vertical;min-height:72px;line-height:1.5}
 .btn.pri:hover{background:var(--pri-hover)}
 .btn.line{border:1px solid var(--line2);color:var(--soft)}
 .btn.line:hover{color:var(--text);border-color:var(--faint)}
-.wd-form{display:grid;grid-template-columns:150px minmax(0,1fr) 130px minmax(0,1.3fr) auto;gap:8px;align-items:end;margin-bottom:24px}
+.wd-form{display:grid;grid-template-columns:150px minmax(0,1fr) 120px minmax(0,1.2fr) minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:24px}
 
 .empty{font-size:13px;color:var(--faint);padding:14px 0}
 
@@ -284,6 +284,33 @@ textarea.inp{resize:vertical;min-height:72px;line-height:1.5}
 
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);font-size:13px;padding:9px 14px;border-radius:999px;opacity:0;transition:.2s;z-index:40;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%)}
+
+/* side menu pull tab */
+.side-handle{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:22;width:20px;height:60px;border:1px solid var(--line2);border-left:0;border-radius:0 12px 12px 0;background:var(--panel);color:var(--muted);display:grid;place-items:center;box-shadow:0 4px 16px rgba(0,0,0,.12);transition:left .25s cubic-bezier(.2,.8,.2,1),width .15s,color .15s}
+.side-handle:hover{color:var(--text);width:24px}
+.side-handle svg{transition:transform .25s}
+body.menu-open .side-handle{left:260px}
+body.menu-open .side-handle svg{transform:rotate(180deg)}
+body.locked .side-handle,body.drawer-open .side-handle{display:none}
+
+/* account status */
+.st{display:inline-block;font-size:11px;font-weight:500;padding:1px 8px;border-radius:999px;margin-left:8px;vertical-align:1px}
+.st.challenge,.dot.challenge{--c:91,141,239} .st.funded,.dot.funded{--c:var(--g)} .st.burned,.dot.burned{--c:var(--r)}
+.st{color:rgb(var(--c));background:rgba(var(--c),.13)}
+.nm-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.fpills{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 22px}
+.fpills button{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);padding:6px 12px;border-radius:999px;border:1px solid var(--line2)}
+.fpills button:hover{color:var(--text)}
+.fpills button.on{color:var(--text);background:var(--raise);border-color:var(--faint)}
+.fpills span{font-size:11px;color:var(--faint);font-feature-settings:"tnum"}
+.dot{width:7px;height:7px;border-radius:50%;background:rgb(var(--c))}
+.row4{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:12px}
+
+/* certificates */
+.file-field{cursor:pointer}
+.file-name{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-field:hover .file-name{border-color:var(--focus);color:var(--text)}
+.acts .rc-btn{display:flex;align-items:center;gap:5px;color:var(--soft)}
 
 /* login */
 .gate{display:none;min-height:100vh;place-items:center;padding:24px}
@@ -338,8 +365,8 @@ body.loading .gbtn{visibility:hidden}
   .total{font-size:17px}
   .kpis{gap:20px;flex-wrap:wrap}
   .d-head,.d-body{padding-left:16px;padding-right:16px}
-  .row3{grid-template-columns:1fr 1fr}
-  .row3>:first-child{grid-column:1/-1}
+  .row3,.row4{grid-template-columns:1fr 1fr}
+  .row3>:first-child,.row4>:first-child{grid-column:1/-1}
 }
 </style>
 </head>
@@ -370,9 +397,11 @@ body.loading .gbtn{visibility:hidden}
     <button data-act="import">Importar copia</button>
     <button data-act="logout">Cerrar sesión</button>
     <input type="file" id="file" accept="application/json" hidden>
+    <input type="file" id="rc-file" accept="image/*" hidden>
   </div>
 </aside>
 <div class="side-scrim" data-act="menu-close"></div>
+<button class="side-handle" data-act="menu-toggle" aria-label="Mostrar u ocultar menú"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 
 <div class="wrap">
   <header class="top">
@@ -462,7 +491,7 @@ body.loading .gbtn{visibility:hidden}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, getDoc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { firebaseConfig, ALLOWED_EMAIL } from './firebase-config.js';
 
 const VIEW_KEY = 'trading-journal.view';
@@ -733,7 +762,7 @@ function renderDash() {
   if (hasUnassigned) rows.push({ name: 'Sin cuenta', pnl: unassigned, balance: null });
 
   const listed = rows.filter(r => r.balance !== null);
-  const balAccs = listed.length ? null : db.accounts.filter(a => a.active !== false);
+  const balAccs = listed.length ? null : db.accounts.filter(usable);
   const totalBal = listed.length ? listed.reduce((x, r) => x + r.balance, 0) : balAccs.reduce((x, a) => x + accountTotals(a, e).balance, 0);
   const accCount = listed.length || balAccs.length;
   const cap = kind === 'day' || /^[a-z]/.test(label);
@@ -864,12 +893,23 @@ function renderMonth(S) {
 }
 
 /* ---------- accounts page ---------- */
+const STATUS = { challenge: 'Challenge', funded: 'Fondeada', burned: 'Quemada' };
+const STATUS_PLURAL = { all: 'Todas', challenge: 'Challenge', funded: 'Fondeadas', burned: 'Quemadas' };
+const statusTag = s => STATUS[s] ? `<span class="st ${s}">${STATUS[s]}</span>` : '';
+// Burned accounts no longer trade: keep them out of the trade picker and the live balance
+const usable = a => a.active !== false && a.status !== 'burned';
+
 function accountForm(a) {
+  const st = a ? a.status || '' : 'challenge';
   return `<form class="form" id="acc-form" style="margin-bottom:20px">
-    <div class="row3">
+    <div class="row4">
       <label class="field"><span>Nombre</span><input class="inp" name="name" value="${esc(a?.name)}" placeholder="MFFU 50K #1" required autocomplete="off"></label>
       <label class="field"><span>Empresa / broker</span><input class="inp" name="firm" value="${esc(a?.firm)}" placeholder="Opcional" autocomplete="off"></label>
       <label class="field"><span>Balance inicial</span><input class="inp mono" name="start" inputmode="decimal" value="${a ? a.start : ''}" placeholder="50,000" required></label>
+      <label class="field"><span>Estado</span><select class="inp" name="status">
+        ${Object.entries(STATUS).map(([k, l]) => `<option value="${k}" ${st === k ? 'selected' : ''}>${l}</option>`).join('')}
+        ${a && !a.status ? '<option value="" selected>Sin estado</option>' : ''}
+      </select></label>
     </div>
     <div class="f-actions" style="justify-content:space-between;align-items:center">
       <label class="check"><input type="checkbox" name="active" ${a?.active === false ? '' : 'checked'}> Activa</label>
@@ -879,37 +919,42 @@ function accountForm(a) {
 }
 
 function renderAccounts() {
-  const list = db.accounts.map(a => ({ a, ...accountTotals(a) }))
-    .sort((x, y) => (y.a.active !== false) - (x.a.active !== false) || x.a.name.localeCompare(y.a.name, 'es', { numeric: true }));
-  const active = list.filter(x => x.a.active !== false);
-  const bal = active.reduce((s, x) => s + x.balance, 0);
-  const pnl = active.reduce((s, x) => s + x.pnl, 0);
+  const all = db.accounts.map(a => ({ a, ...accountTotals(a) }))
+    .sort((x, y) => usable(y.a) - usable(x.a) || x.a.name.localeCompare(y.a.name, 'es', { numeric: true }));
+  const filter = STATUS[prefs.accFilter] ? prefs.accFilter : 'all';
+  const list = filter === 'all' ? all : all.filter(x => x.a.status === filter);
+  const live = list.filter(x => usable(x.a));
+  const bal = live.reduce((s, x) => s + x.balance, 0);
+  const pnl = list.reduce((s, x) => s + x.pnl, 0);
   const wd = list.reduce((s, x) => s + x.wd, 0);
+  const count = k => all.filter(x => k === 'all' || x.a.status === k).length;
 
   $('#accounts').innerHTML = `
     <div class="card-head">
       <div><div class="title">Cuentas</div><div class="sub">El balance se calcula con el balance inicial, los trades y los retiros.</div></div>
       ${accForm === 'new' ? '' : '<button class="btn pri" data-act="acc-new">+ Nueva cuenta</button>'}
     </div>
+    ${all.length ? `<div class="fpills">${Object.entries(STATUS_PLURAL).map(([k, l]) =>
+      `<button class="${filter === k ? 'on' : ''}" data-acc-filter="${k}">${k !== 'all' ? `<i class="dot ${k}"></i>` : ''}${l}<span>${count(k)}</span></button>`).join('')}</div>` : ''}
     <div class="kpis">
-      <div>Balance total<b class="mono">${usd.format(bal)}</b></div>
+      <div>Balance${filter === 'burned' ? '' : ' total'}<b class="mono">${live.length ? usd.format(bal) : '—'}</b></div>
       <div>P&amp;L acumulado<b class="mono ${tone(pnl)}">${money(round2(pnl))}</b></div>
-      <div>Cuentas activas<b class="mono">${active.length}</b></div>
+      <div>Cuentas<b class="mono">${list.length}</b></div>
       <div>Retirado<b class="mono">${usd.format(wd)}</b></div>
     </div>
     ${accForm === 'new' ? accountForm() : ''}
     ${list.length ? `<div class="tbl acc-t">
       <div class="tr hd"><span>Cuenta</span><span class="r c-start">Inicial</span><span class="r c-pnl">P&amp;L</span><span class="r c-wd">Retiros</span><span class="r">Balance</span><span></span></div>
       ${list.map(({ a, pnl, wd, balance }) => accForm === a.id ? `<div style="padding-top:12px;border-top:1px solid var(--line)">${accountForm(a)}</div>` : `
-      <div class="tr ${a.active === false ? 'off' : ''}">
-        <span class="nm">${esc(a.name)}<small>${esc(a.firm || '')}${a.active === false ? (a.firm ? ' · ' : '') + 'Archivada' : ''}</small></span>
+      <div class="tr ${usable(a) ? '' : 'off'}">
+        <span class="nm"><span class="nm-line">${esc(a.name)}${statusTag(a.status)}</span><small>${esc(a.firm || '')}${a.active === false ? (a.firm ? ' · ' : '') + 'Archivada' : ''}</small></span>
         <span class="r mono c-start">${usd.format(a.start || 0)}</span>
         <span class="r mono c-pnl ${tone(pnl)}">${money(round2(pnl))}</span>
         <span class="r mono c-wd">${wd ? usd.format(wd) : '—'}</span>
         <span class="r mono">${usd.format(balance)}</span>
         <span class="acts"><button data-act="acc-edit" data-id="${a.id}">Editar</button><button data-act="acc-toggle" data-id="${a.id}">${a.active === false ? 'Activar' : 'Archivar'}</button><button class="del" data-act="acc-del" data-id="${a.id}">Eliminar</button></span>
       </div>`).join('')}
-    </div>` : accForm ? '' : '<div class="empty">Aún no tienes cuentas. Agrégalas para asignar cada trade a su cuenta y ver el balance de cada una.</div>'}`;
+    </div>` : accForm ? '' : all.length ? `<div class="empty">No tienes cuentas con este estado.</div>` : '<div class="empty">Aún no tienes cuentas. Agrégalas para asignar cada trade a su cuenta y ver el balance de cada una.</div>'}`;
 }
 
 /* ---------- withdrawals page ---------- */
@@ -934,6 +979,7 @@ function renderWithdrawals() {
       <label class="field"><span>Cuenta</span><select class="inp" name="account"><option value="">Sin cuenta</option>${accs.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></label>
       <label class="field"><span>Monto</span><input class="inp mono" name="amount" inputmode="decimal" placeholder="0.00" required></label>
       <label class="field wide"><span>Nota</span><input class="inp" name="note" placeholder="Opcional" autocomplete="off"></label>
+      <label class="field wide file-field"><span>Certificado</span><span class="inp file-name" id="wd-file-name">Subir imagen (opcional)</span><input type="file" name="receipt" accept="image/*" hidden></label>
       <button class="btn pri wide" type="submit">Agregar</button>
     </form>
     ${list.length ? `<div class="tbl wd-t">
@@ -943,14 +989,16 @@ function renderWithdrawals() {
         <span class="nm">${w.accountId ? esc(accName(w.accountId)) : '<span style="color:var(--muted);font-weight:400">Sin cuenta</span>'}</span>
         <span class="c-note" style="color:var(--soft)">${esc(w.note)}</span>
         <span class="r mono" style="color:var(--gold)">${usd.format(w.amount)}</span>
-        <span class="acts"><button class="del" data-act="wd-del" data-id="${w.id}">Eliminar</button></span>
+        <span class="acts">${w.receipt
+          ? `<button class="rc-btn" data-act="rc-view" data-id="${w.id}" title="Ver certificado"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2.5" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="m2.5 11 3.5-3.5 3 3 2-2 2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>Certificado</button>`
+          : `<button data-act="rc-add" data-id="${w.id}">+ Certificado</button>`}<button class="del" data-act="wd-del" data-id="${w.id}">Eliminar</button></span>
       </div>`).join('')}
     </div>` : '<div class="empty">Sin retiros registrados.</div>'}`;
 }
 
 /* ---------- day drawer ---------- */
 function accountField(t) {
-  const list = db.accounts.filter(a => a.active !== false || a.id === t?.accountId);
+  const list = db.accounts.filter(a => usable(a) || a.id === t?.accountId);
   if (!list.length) return `<div class="field"><span>Cuenta</span><span class="hint" style="padding-top:10px">Agrega tus cuentas en <a href="#/cuentas">Cuentas</a>.</span></div>`;
   const sel = t ? t.accountId : (list.some(a => a.id === prefs.lastAcc) ? prefs.lastAcc : list[0].id);
   return `<label class="field"><span>Cuenta</span><select class="inp" name="account">
@@ -1083,6 +1131,8 @@ function closeDrawer() {
 /* ---------- events ---------- */
 document.addEventListener('click', e => {
   if (pick && !e.target.closest('.pp')) togglePicker(false);
+  const af = e.target.closest('[data-acc-filter]');
+  if (af) { prefs.accFilter = af.dataset.accFilter; savePrefs(); accForm = null; renderAccounts(); return; }
   const preset = e.target.closest('[data-preset]');
   if (preset) { setPeriod(preset.dataset.preset); togglePicker(false); renderDash(); return; }
   const pd = e.target.closest('[data-pick]');
@@ -1133,8 +1183,14 @@ document.addEventListener('click', e => {
       break;
     }
     case 'wd-del':
-      if (confirm('¿Eliminar este retiro?')) { db.withdrawals = db.withdrawals.filter(w => w.id !== id); drop('withdrawals', id); render(); }
+      if (confirm('¿Eliminar este retiro?')) {
+        if (db.withdrawals.find(w => w.id === id)?.receipt) drop('receipts', id);
+        db.withdrawals = db.withdrawals.filter(w => w.id !== id); drop('withdrawals', id); render();
+      }
       break;
+    case 'rc-add': rcTarget = id; $('#rc-file').click(); break;
+    case 'rc-view': viewReceipt(id); break;
+    case 'menu-toggle': document.body.classList.toggle('menu-open'); break;
     case 'login': login(); break;
     case 'theme': toggleTheme(); break;
     case 'logout': signOut(auth); break;
@@ -1177,7 +1233,7 @@ document.addEventListener('submit', e => {
   } else if (form.id === 'acc-form') {
     const start = num(f.get('start'));
     if (isNaN(start)) { toast('Balance no válido'); return; }
-    const data = { name: f.get('name').trim(), firm: f.get('firm').trim(), start: round2(start), active: f.get('active') === 'on' };
+    const data = { name: f.get('name').trim(), firm: f.get('firm').trim(), start: round2(start), status: f.get('status') || '', active: f.get('active') === 'on' };
     let acc = accForm !== 'new' && db.accounts.find(a => a.id === accForm);
     if (acc) Object.assign(acc, data);
     else db.accounts.push(acc = { id: newId(), ...data });
@@ -1189,9 +1245,11 @@ document.addEventListener('submit', e => {
     const amount = num(f.get('amount'));
     if (isNaN(amount) || amount <= 0) { toast('Monto no válido'); return; }
     const w = { id: newId(), date: f.get('date') || todayKey, accountId: f.get('account') || null, amount: round2(amount), note: f.get('note').trim() };
+    const file = f.get('receipt');
     db.withdrawals.push(w);
     put('withdrawals', w);
     renderWithdrawals(); toast('Retiro agregado');
+    if (file && file.size) attachReceipt(w, file);
 
   } else if (form.id === 'pf-form') {
     db.profile = { name: f.get('name').trim(), photo: pfPhoto || '' };
@@ -1292,6 +1350,56 @@ function toast(msg) {
 }
 
 /* ---------- auth ---------- */
+/* ---------- withdrawal certificates ----------
+   Stored compressed in users/{uid}/receipts/{withdrawalId} (Firestore caps a document at ~1 MB),
+   and only fetched when opened so the withdrawals list stays light. */
+let rcTarget = null;
+function compressImage(file, max, quality) {
+  return new Promise((ok, fail) => {
+    const img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      const x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      ok(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = fail;
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function attachReceipt(w, file) {
+  try {
+    let data = await compressImage(file, 1600, 0.82);
+    if (data.length > 900000) data = await compressImage(file, 1200, 0.7);
+    if (data.length > 900000) { toast('La imagen es demasiado grande'); return; }
+    toast('Subiendo certificado…');
+    await setDoc(ref('receipts', w.id), { img: data });
+    w.receipt = true;
+    await put('withdrawals', w);
+    renderWithdrawals(); toast('Certificado guardado');
+  } catch (err) { failed(err); }
+}
+async function viewReceipt(id) {
+  try {
+    const s = await getDoc(ref('receipts', id));
+    if (!s.exists()) { toast('No se encontró el certificado'); return; }
+    $('#lightbox img').src = s.data().img;
+    $('#lightbox').classList.add('on');
+  } catch (err) { failed(err); }
+}
+$('#rc-file').addEventListener('change', e => {
+  const file = e.target.files[0], w = db.withdrawals.find(x => x.id === rcTarget);
+  e.target.value = '';
+  if (file && w) attachReceipt(w, file);
+});
+document.addEventListener('change', e => {
+  if (e.target.name === 'receipt') $('#wd-file-name').textContent = e.target.files[0]?.name || 'Subir imagen (opcional)';
+});
+
 let deniedMsg = '';
 function showGate(msg) {
   $('#gate-msg').textContent = msg;
